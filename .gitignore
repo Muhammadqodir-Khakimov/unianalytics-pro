@@ -69,6 +69,14 @@ desktop.ini
 .pytest_cache/
 coverage.xml
 htmlcov/
+frontend/e2e/smoke-*.spec.ts
+frontend/e2e/screens/
+frontend/test-results/
+frontend/playwright-report/
+backend/backend.err
+backend/backend.log
+frontend/frontend.err
+frontend/frontend.log
 
 # Telegram bot data
 telegram_links.json
