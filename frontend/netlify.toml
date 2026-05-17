@@ -1,0 +1,56 @@
+# Netlify build & deploy konfiguratsiyasi.
+# Loyiha root: frontend/
+# Netlify dashboard: Site settings -> Build & deploy -> Base directory: frontend
+
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "frontend/dist"
+  ignore = "git diff --quiet HEAD^ HEAD ./"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_VERSION  = "10"
+  # VITE_API_BASE_URL ni Netlify dashboard'da o'rnatasiz:
+  # Site settings -> Environment variables ->
+  #   VITE_API_BASE_URL = https://backend-production-89be.up.railway.app/api/v1
+
+# SPA — barcha marshrutlarni index.html'ga yo'naltirish
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200
+
+# Backend API'ga proxy (ixtiyoriy — agar same-origin xohlasangiz)
+# [[redirects]]
+#   from = "/api/*"
+#   to   = "https://backend-production-89be.up.railway.app/api/:splat"
+#   status = 200
+#   force  = true
+
+# ------------------------ Cache & security headers ------------------------
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options         = "DENY"
+    X-Content-Type-Options  = "nosniff"
+    Referrer-Policy         = "strict-origin-when-cross-origin"
+    Permissions-Policy      = "camera=(), microphone=(), geolocation=()"
+
+# ------------------------ Deploy konteksti ------------------------
+
+[context.production.environment]
+  # Production qiymatlar Netlify dashboard'da
+  NODE_ENV = "production"
+
+[context.deploy-preview.environment]
+  NODE_ENV = "production"
+
+[context.branch-deploy.environment]
+  NODE_ENV = "production"

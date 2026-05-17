@@ -1,0 +1,43 @@
+# Fly.io konfiguratsiyasi — Telegram bot (polling rejim).
+#
+# Bepul reja: 3 ta kichik VM (256 MB RAM). Bot bittasini band qiladi.
+#
+# Birinchi marta ishga tushirish:
+#   fly auth login
+#   fly launch --no-deploy --copy-config --name unianalytics-bot --region fra
+#   fly secrets set TELEGRAM_BOT_TOKEN=... BACKEND_API_URL=... REDIS_URL=...
+#   fly deploy
+
+app            = "unianalytics-bot"
+primary_region = "fra"          # Frankfurt — O'zbekistonga eng yaqin Fly region
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  BOT_MODE            = "polling"
+  RATE_LIMIT_PER_MIN  = "20"
+  PYTHONUNBUFFERED    = "1"
+
+[[vm]]
+  size      = "shared-cpu-1x"
+  memory    = "256mb"
+  cpu_kind  = "shared"
+  cpus      = 1
+
+# Bot polling rejimida ishlaydi — public HTTP port kerakmas.
+# Webhook rejimiga o'tilganda quyidagi [http_service] bloki ochiladi.
+
+# [http_service]
+#   internal_port       = 8080
+#   force_https         = true
+#   auto_stop_machines  = false
+#   auto_start_machines = true
+#   min_machines_running = 1
+
+[deploy]
+  strategy = "immediate"
+
+[[restart]]
+  policy     = "on-failure"
+  max_retries = 10
