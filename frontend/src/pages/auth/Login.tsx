@@ -1,4 +1,4 @@
-import { Form, Input, Button, Card, message, Typography, Divider } from 'antd';
+import { Form, Input, Button, Card, message, Typography, Divider, Space, Tag } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
@@ -6,12 +6,25 @@ import { useTranslation } from 'react-i18next';
 import { authService } from '@/services/authService';
 import { useAuthStore } from '@/store/authStore';
 
+// Demo akkauntlar — backend seed_data bilan mos
+const DEMO_ACCOUNTS = [
+  { role: 'admin',   user: 'admin',   pass: 'admin123',   color: 'magenta', label: 'Admin'    },
+  { role: 'dean',    user: 'dekan',   pass: 'dekan123',   color: 'purple',  label: 'Dekan'    },
+  { role: 'teacher', user: 'teacher', pass: 'teacher123', color: 'geekblue', label: 'O\'qituvchi' },
+  { role: 'student', user: 'student', pass: 'student123', color: 'green',   label: 'Talaba'   },
+];
+
 export function Login() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [form] = Form.useForm<{ username: string; password: string }>();
   const setTokens = useAuthStore((s) => s.setTokens);
   const setUser = useAuthStore((s) => s.setUser);
+
+  const fillDemo = (user: string, pass: string) => {
+    form.setFieldsValue({ username: user, password: pass });
+  };
 
   const onFinish = async (values: { username: string; password: string }) => {
     setLoading(true);
@@ -39,7 +52,7 @@ export function Login() {
           <Typography.Text type="secondary">Student Rating OLAP</Typography.Text>
         </div>
 
-        <Form layout="vertical" onFinish={onFinish}>
+        <Form layout="vertical" onFinish={onFinish} form={form}>
           <Form.Item
             label={t('auth.username')}
             name="username"
@@ -61,16 +74,24 @@ export function Login() {
           </Button>
         </Form>
 
-        <Divider />
-        <Typography.Paragraph style={{ textAlign: 'center', marginBottom: 0 }}>
-          <Typography.Text type="secondary">Test foydalanuvchilar:</Typography.Text>
-          <br />
-          <Typography.Text code>admin / admin123</Typography.Text> ·{' '}
-          <Typography.Text code>dekan / dekan123</Typography.Text>
-          <br />
-          <Typography.Text code>teacher / teacher123</Typography.Text> ·{' '}
-          <Typography.Text code>student / student123</Typography.Text>
-        </Typography.Paragraph>
+        <Divider>Demo akkauntlar</Divider>
+        <div style={{ textAlign: 'center' }}>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Bosing — avtomatik to'ldiradi
+          </Typography.Text>
+          <Space wrap style={{ marginTop: 8, justifyContent: 'center', width: '100%' }}>
+            {DEMO_ACCOUNTS.map((a) => (
+              <Tag
+                key={a.user}
+                color={a.color}
+                style={{ cursor: 'pointer', padding: '4px 10px', fontSize: 12 }}
+                onClick={() => fillDemo(a.user, a.pass)}
+              >
+                {a.label}
+              </Tag>
+            ))}
+          </Space>
+        </div>
 
         <div style={{ textAlign: 'center', marginTop: 16 }}>
           <Link to="/register">{t('auth.register_link')}</Link>

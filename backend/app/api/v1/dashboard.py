@@ -145,3 +145,90 @@ def heatmap_faculty_semester(db: Session = Depends(get_olap_db)):
     )
     rows = db.execute(sql).mappings().all()
     return [dict(r) for r in rows]
+
+
+@router.get("/grade-distribution")
+def grade_distribution(db: Session = Depends(get_olap_db)):
+    """Baholar histogrami (bell curve uchun) — barcha individual baholar."""
+    sql = text("SELECT grade_value FROM fact_student_grades WHERE grade_value IS NOT NULL")
+    rows = db.execute(sql).fetchall()
+    return [float(r[0]) for r in rows]
+
+
+@router.get("/faculty-radar")
+def faculty_radar(db: Session = Depends(get_olap_db)):
+    """Fakultetlar uchun radar chart — 5 o'lcham:
+    GPA, Davomat, Faollik (baho intensivligi), O'tish foizi, Talabalar o'sishi."""
+    sql = text(
+        """
+        SELECT fac.faculty_name AS name,
+               ROUND(AVG(f.gpa_points)::numeric * 1.25, 2)              AS gpa,
+               ROUND(AVG(f.attendance_percentage)::numeric / 20.0, 2)   AS attendance,
+               ROUND(LEAST(COUNT(*)::numeric / 200.0, 5), 2)            AS activity,
+               ROUND(SUM(CASE WHEN f.is_passed THEN 1 ELSE 0 END) * 5.0
+                     / NULLIF(COUNT(*), 0), 2)                          AS pass_rate,
+               ROUND(LEAST(COUNT(DISTINCT f.student_key)::numeric / 50.0, 5), 2) AS growth
+        FROM fact_student_grades f
+        JOIN dim_faculty fac ON f.faculty_key = fac.faculty_key
+        GROUP BY fac.faculty_name
+        ORDER BY gpa DESC
+        LIMIT 6
+        """
+    )
+    rows = db.execute(sql).mappings().all()
+    return {
+        "axes": ["GPA", "Davomat", "Faollik", "O'tish", "Talabalar"],
+        "series": [
+            {
+                "name": r["name"],
+                "values": [
+                    float(r["gpa"] or 0),
+                    float(r["attendance"] or 0),
+                    float(r["activity"] or 0),
+                    float(r["pass_rate"] or 0),
+                    float(r["growth"] or 0),
+                ],
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.get("/attendance-heatmap")
+def attendance_heatmap(db: Session = Depends(get_olap_db)):
+    """Kun × soat heatmap — schedule entries soni va davomat o'rtachasi."""
+    # Schedule jadval kun (0-6) × start_hour bo'yicha — agar bo'sh bo'lsa demo
+    from sqlalchemy import text as sql_text
+    try:
+        rows = db.execute(
+            sql_text(
+                """
+                SELECT EXTRACT(DOW FROM s.full_date)::int AS dow,
+                       EXTRACT(HOUR FROM f.created_at)::int AS hour,
+                       COUNT(*) AS cnt,
+                       ROUND(AVG(f.attendance_percentage)::numeric, 1) AS att
+                FROM fact_student_grades f
+                JOIN dim_time s ON f.time_key = s.time_key
+                WHERE f.created_at IS NOT NULL
+                GROUP BY dow, hour
+                """
+            )
+        ).mappings().all()
+    except Exception:
+        rows = []
+
+    days = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"]
+    result = []
+    if rows:
+        for r in rows:
+            d = int(r["dow"]) if r["dow"] is not None else 0
+            h = int(r["hour"]) if r["hour"] is not None else 8
+            if 0 <= d < 7 and 8 <= h <= 18:
+                result.append({"row": days[d], "col": f"{h}:00", "value": int(r["cnt"])})
+    # Bo'sh joylarni 0 bilan to'ldirish (heatmap to'liq panjara)
+    seen = {(r["row"], r["col"]) for r in result}
+    for d in days:
+        for h in range(8, 18):
+            if (d, f"{h}:00") not in seen:
+                result.append({"row": d, "col": f"{h}:00", "value": 0})
+    return result

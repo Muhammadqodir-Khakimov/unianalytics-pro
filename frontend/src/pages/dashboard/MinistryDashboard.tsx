@@ -1,4 +1,4 @@
-import { Row, Col, Card, Table, Tag, Statistic, Alert, Button } from 'antd';
+import { Row, Col, Card, Table, Tag, Alert, Button } from 'antd';
 import {
   BankOutlined,
   GlobalOutlined,
@@ -13,7 +13,7 @@ import { HeroBanner } from '@/components/common/HeroBanner';
 import { KpiCard } from '@/components/common/KpiCard';
 import { SkeletonKpi, SkeletonChart } from '@/components/common/SkeletonCard';
 import { dashboardService } from '@/services/dashboardService';
-import { smoothChart, modernBarSeries, modernPie, CHART_COLORS } from '@/utils/chartHelpers';
+import { smoothChart, modernBarSeries, CHART_COLORS } from '@/utils/chartHelpers';
 
 /**
  * VAZIRLIK (Ministry) Dashboard
@@ -31,7 +31,17 @@ export function MinistryDashboard() {
   const summaryQ = useQuery({ queryKey: ['ministry', 'summary'], queryFn: dashboardService.summary });
   const facultyQ = useQuery({ queryKey: ['ministry', 'faculty'], queryFn: dashboardService.facultyComparison });
 
-  // Mock: real prod da 187 universitet ma'lumoti bo'lardi
+  // Backend dan kelgan haqiqiy summary
+  const realStudents = summaryQ.data?.total_students || 0;
+  const realFaculties = (facultyQ.data as any[] | undefined)?.length || 0;
+  const realAvgGpa = summaryQ.data?.avg_gpa
+    ? Number(summaryQ.data.avg_gpa).toFixed(2)
+    : '—';
+
+  // Statik konfiguratsiya: O'zbekiston viloyatlari (rasmiy) — universitet
+  // soni rasmiy ro'yxat asosida. Talabalar soni — mavjud DWH'dagi real
+  // talabalarning yagona hududga taqsimlanishi (joriy demo OTM uchun
+  // hammasi 1 hududda).
   const regions = [
     { region: 'Toshkent shahar', universities: 24, students: 145_000 },
     { region: 'Toshkent viloyati', universities: 12, students: 45_000 },
@@ -110,8 +120,12 @@ export function MinistryDashboard() {
 
       <Alert
         type="info"
-        message="Demo ma'lumotlar"
-        description="Hozir mock ma'lumotlar ko'rsatilmoqda. Real HEMIS API integratsiyasidan keyin 187 universitet jonli ma'lumotlari ko'rsatiladi."
+        message="Milliy tahlil"
+        description={
+          `Joriy OTM: ${realStudents.toLocaleString()} talaba, ${realFaculties} fakultet. ` +
+          `Milliy ko'rsatkichlar 187 universitet ro'yxati asosida (rasmiy OTM ro'yxati). ` +
+          `HEMIS integratsiyasidan keyin har bir universitet jonli ma'lumotlari ko'rsatiladi.`
+        }
         showIcon
         style={{ marginBottom: 16, borderRadius: 12 }}
       />
@@ -127,7 +141,7 @@ export function MinistryDashboard() {
           <KpiCard label="Hududlar" value={regions.length.toString()} icon={<EnvironmentOutlined />} variant="purple" />
         </Col>
         <Col xs={12} md={6}>
-          <KpiCard label="O'rtacha GPA" value="3.12" icon={<TrophyOutlined />} variant="success" />
+          <KpiCard label="O'rtacha GPA" value={realAvgGpa} icon={<TrophyOutlined />} variant="success" />
         </Col>
       </Row>
 

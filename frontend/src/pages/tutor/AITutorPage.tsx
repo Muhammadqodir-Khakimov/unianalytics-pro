@@ -78,7 +78,7 @@ export function AITutorPage() {
       <Alert
         type="info"
         message="AI Tutor"
-        description="Sizning akademik ma'lumotlaringizni bilgan holda javob beradi (GPA, baholar, davomat). Demo rejimda ishlayapti — real Claude/OpenAI API uchun ANTHROPIC_API_KEY o'rnating."
+        description="Akademik ma'lumotlaringiz (GPA, baholar, davomat) asosida sizga moslashtirilgan javoblar beradi. Backend Anthropic / OpenAI API'lar bilan integratsiyalashgan — `ANTHROPIC_API_KEY` env'i to'g'ri sozlangan holda haqiqiy LLM javoblari ishlaydi."
         showIcon
         icon={<ExperimentOutlined />}
         style={{ marginBottom: 16, borderRadius: 12 }}
