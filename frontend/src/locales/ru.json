@@ -1,0 +1,74 @@
+{
+  "app_name": "Рейтинг студентов OLAP",
+  "menu": {
+    "dashboard": "Панель управления",
+    "olap": "OLAP анализ",
+    "cube": "Анализ куба",
+    "pivot": "Сводная таблица",
+    "students": "Студенты",
+    "teachers": "Преподаватели",
+    "subjects": "Предметы",
+    "grades": "Оценки",
+    "faculties": "Факультеты",
+    "reports": "Отчёты",
+    "settings": "Настройки",
+    "logout": "Выйти"
+  },
+  "auth": {
+    "login_title": "Вход в систему",
+    "register_title": "Регистрация",
+    "username": "Имя пользователя",
+    "password": "Пароль",
+    "email": "Email",
+    "full_name": "ФИО",
+    "role": "Роль",
+    "login": "Войти",
+    "register": "Зарегистрироваться",
+    "login_link": "Уже есть аккаунт? Войти",
+    "register_link": "Нет аккаунта? Зарегистрироваться",
+    "username_required": "Введите имя пользователя",
+    "password_required": "Введите пароль",
+    "login_success": "Успешный вход",
+    "register_success": "Регистрация успешна"
+  },
+  "roles": {
+    "admin": "Администратор",
+    "dekan": "Декан",
+    "teacher": "Преподаватель",
+    "student": "Студент"
+  },
+  "dashboard": {
+    "title": "Панель управления",
+    "total_students": "Всего студентов",
+    "total_grades": "Всего оценок",
+    "avg_gpa": "Средний GPA",
+    "passing_rate": "Процент сдачи",
+    "gpa_trend": "Динамика GPA",
+    "faculty_comparison": "По факультетам",
+    "top_students": "Лучшие студенты",
+    "subject_performance": "Успеваемость по предметам"
+  },
+  "olap": {
+    "title": "OLAP анализ",
+    "select_dimensions": "Выберите измерения",
+    "select_measures": "Выберите меры",
+    "filters": "Фильтры",
+    "execute": "Выполнить",
+    "drill_down": "Drill-down",
+    "roll_up": "Roll-up",
+    "slice": "Slice",
+    "dice": "Dice",
+    "pivot": "Pivot"
+  },
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "edit": "Редактировать",
+    "delete": "Удалить",
+    "create": "Создать",
+    "search": "Поиск",
+    "loading": "Загрузка...",
+    "no_data": "Нет данных",
+    "actions": "Действия"
+  }
+}

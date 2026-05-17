@@ -1,0 +1,172 @@
+version: '3.9'
+
+services:
+  postgres-oltp:
+    image: postgres:16-alpine
+    container_name: olap-postgres-oltp
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${OLTP_DB_USER:-oltp_user}
+      POSTGRES_PASSWORD: ${OLTP_DB_PASSWORD:-oltp_pass}
+      POSTGRES_DB: ${OLTP_DB_NAME:-student_oltp}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_oltp_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${OLTP_DB_USER:-oltp_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olap-network
+
+  postgres-olap:
+    image: postgres:16-alpine
+    container_name: olap-postgres-olap
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${OLAP_DB_USER:-olap_user}
+      POSTGRES_PASSWORD: ${OLAP_DB_PASSWORD:-olap_pass}
+      POSTGRES_DB: ${OLAP_DB_NAME:-student_olap}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_olap_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${OLAP_DB_USER:-olap_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olap-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: olap-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olap-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: olap-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres-oltp:
+        condition: service_healthy
+      postgres-olap:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - olap-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: olap-celery-worker
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - redis
+      - postgres-oltp
+      - postgres-olap
+    volumes:
+      - ./backend:/app
+    networks:
+      - olap-network
+    command: celery -A app.tasks.celery_app worker --loglevel=info
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: olap-celery-beat
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - redis
+    volumes:
+      - ./backend:/app
+    networks:
+      - olap-network
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: olap-flower
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery-worker
+    networks:
+      - olap-network
+    command: celery -A app.tasks.celery_app flower --port=5555
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: olap-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - olap-network
+    command: npm run dev -- --host 0.0.0.0
+
+  nginx:
+    image: nginx:alpine
+    container_name: olap-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - olap-network
+
+volumes:
+  postgres_oltp_data:
+  postgres_olap_data:
+  redis_data:
+
+networks:
+  olap-network:
+    driver: bridge

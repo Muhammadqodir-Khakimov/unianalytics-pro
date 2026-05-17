@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+dist/
+build/
+.parcel-cache
+.next/
+.turbo/
+
+# Environments — SECRETS
+.env
+.env.local
+.env.production
+.env.development
+.env.*.local
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# SQLite / Database
+*.sqlite
+*.sqlite3
+*.db
+*-journal
+
+# Docker volumes
+docker-compose.override.yml
+
+# ML modellar (katta fayllar — alohida saqlanadi)
+ml_models/*.joblib
+
+# Uploads
+uploads/
+
+# Backups
+backups/
+*.sql.gz
+*.dump
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Test artifacts
+.coverage
+.pytest_cache/
+coverage.xml
+htmlcov/
+
+# Telegram bot data
+telegram_links.json
+
+# Prompt extracted folder
+prompts_extracted/
+files.zip

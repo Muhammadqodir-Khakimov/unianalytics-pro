@@ -1,0 +1,190 @@
+version: '3.9'
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres-oltp:
+    image: postgres:16-alpine
+    container_name: olap-postgres-oltp-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${OLTP_DB_USER}
+      POSTGRES_PASSWORD: ${OLTP_DB_PASSWORD}
+      POSTGRES_DB: ${OLTP_DB_NAME}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_oltp_prod:/var/lib/postgresql/data
+      - ./backend/scripts/postgres-init/oltp:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${OLTP_DB_USER} -d ${OLTP_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - olap-net
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  postgres-olap:
+    image: postgres:16-alpine
+    container_name: olap-postgres-olap-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${OLAP_DB_USER}
+      POSTGRES_PASSWORD: ${OLAP_DB_PASSWORD}
+      POSTGRES_DB: ${OLAP_DB_NAME}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    command: >
+      postgres
+      -c shared_buffers=512MB
+      -c effective_cache_size=1GB
+      -c work_mem=32MB
+      -c maintenance_work_mem=128MB
+      -c max_parallel_workers=4
+      -c max_worker_processes=8
+    volumes:
+      - postgres_olap_prod:/var/lib/postgresql/data
+      - ./backend/scripts/create_materialized_views.sql:/docker-entrypoint-initdb.d/01-mv.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${OLAP_DB_USER}"]
+      interval: 10s
+    networks:
+      - olap-net
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+
+  redis:
+    image: redis:7-alpine
+    container_name: olap-redis-prod
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redispass} --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-redispass}", "ping"]
+      interval: 10s
+    networks:
+      - olap-net
+    logging: *default-logging
+
+  backend:
+    build: ./backend
+    container_name: olap-backend-prod
+    restart: always
+    env_file:
+      - ./backend/.env.production
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+    depends_on:
+      postgres-oltp:
+        condition: service_healthy
+      postgres-olap:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - olap-net
+    command: gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --access-logfile - --error-logfile -
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  celery-worker:
+    build: ./backend
+    container_name: olap-celery-prod
+    restart: always
+    env_file:
+      - ./backend/.env.production
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - olap-net
+    command: celery -A app.tasks.celery_app worker --loglevel=warning --concurrency=4 --max-tasks-per-child=100
+    logging: *default-logging
+
+  celery-beat:
+    build: ./backend
+    container_name: olap-beat-prod
+    restart: always
+    env_file:
+      - ./backend/.env.production
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - olap-net
+    command: celery -A app.tasks.celery_app beat --loglevel=warning
+    logging: *default-logging
+
+  flower:
+    build: ./backend
+    container_name: olap-flower-prod
+    restart: always
+    env_file:
+      - ./backend/.env.production
+    depends_on:
+      - celery-worker
+    networks:
+      - olap-net
+    command: celery -A app.tasks.celery_app flower --port=5555 --basic-auth=${FLOWER_USER:-admin}:${FLOWER_PASS:-changeme}
+    logging: *default-logging
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    container_name: olap-frontend-prod
+    restart: always
+    networks:
+      - olap-net
+    logging: *default-logging
+
+  nginx:
+    image: nginx:alpine
+    container_name: olap-nginx-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - olap-net
+    logging: *default-logging
+
+volumes:
+  postgres_oltp_prod:
+    driver: local
+  postgres_olap_prod:
+    driver: local
+  redis_prod:
+    driver: local
+
+networks:
+  olap-net:
+    driver: bridge

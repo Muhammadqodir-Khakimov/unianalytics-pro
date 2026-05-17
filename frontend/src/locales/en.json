@@ -1,0 +1,74 @@
+{
+  "app_name": "Student Rating OLAP",
+  "menu": {
+    "dashboard": "Dashboard",
+    "olap": "OLAP Analysis",
+    "cube": "Cube Analysis",
+    "pivot": "Pivot Table",
+    "students": "Students",
+    "teachers": "Teachers",
+    "subjects": "Subjects",
+    "grades": "Grades",
+    "faculties": "Faculties",
+    "reports": "Reports",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
+  "auth": {
+    "login_title": "Sign in",
+    "register_title": "Sign up",
+    "username": "Username",
+    "password": "Password",
+    "email": "Email",
+    "full_name": "Full Name",
+    "role": "Role",
+    "login": "Sign In",
+    "register": "Sign Up",
+    "login_link": "Already have an account? Sign in",
+    "register_link": "Don't have an account? Sign up",
+    "username_required": "Please enter username",
+    "password_required": "Please enter password",
+    "login_success": "Logged in successfully",
+    "register_success": "Registration successful"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "dekan": "Dean",
+    "teacher": "Teacher",
+    "student": "Student"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "total_students": "Total Students",
+    "total_grades": "Total Grades",
+    "avg_gpa": "Average GPA",
+    "passing_rate": "Passing Rate",
+    "gpa_trend": "GPA Trend",
+    "faculty_comparison": "Faculty Comparison",
+    "top_students": "Top Students",
+    "subject_performance": "Subject Performance"
+  },
+  "olap": {
+    "title": "OLAP Analysis",
+    "select_dimensions": "Select Dimensions",
+    "select_measures": "Select Measures",
+    "filters": "Filters",
+    "execute": "Execute",
+    "drill_down": "Drill-down",
+    "roll_up": "Roll-up",
+    "slice": "Slice",
+    "dice": "Dice",
+    "pivot": "Pivot"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "search": "Search",
+    "loading": "Loading...",
+    "no_data": "No data",
+    "actions": "Actions"
+  }
+}

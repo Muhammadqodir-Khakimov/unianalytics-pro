@@ -1,0 +1,74 @@
+{
+  "app_name": "Talaba Reyting OLAP",
+  "menu": {
+    "dashboard": "Boshqaruv paneli",
+    "olap": "OLAP tahlil",
+    "cube": "Kub tahlili",
+    "pivot": "Pivot jadval",
+    "students": "Talabalar",
+    "teachers": "O'qituvchilar",
+    "subjects": "Fanlar",
+    "grades": "Baholar",
+    "faculties": "Fakultetlar",
+    "reports": "Hisobotlar",
+    "settings": "Sozlamalar",
+    "logout": "Chiqish"
+  },
+  "auth": {
+    "login_title": "Tizimga kirish",
+    "register_title": "Ro'yxatdan o'tish",
+    "username": "Foydalanuvchi nomi",
+    "password": "Parol",
+    "email": "Email",
+    "full_name": "F.I.Sh.",
+    "role": "Rol",
+    "login": "Kirish",
+    "register": "Ro'yxatdan o'tish",
+    "login_link": "Allaqachon hisobingiz bormi? Kirish",
+    "register_link": "Hisobingiz yo'qmi? Ro'yxatdan o'ting",
+    "username_required": "Foydalanuvchi nomini kiriting",
+    "password_required": "Parolni kiriting",
+    "login_success": "Muvaffaqiyatli kirildi",
+    "register_success": "Muvaffaqiyatli ro'yxatdan o'tildi"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "dekan": "Dekan",
+    "teacher": "O'qituvchi",
+    "student": "Talaba"
+  },
+  "dashboard": {
+    "title": "Boshqaruv paneli",
+    "total_students": "Jami talabalar",
+    "total_grades": "Jami baholar",
+    "avg_gpa": "O'rtacha GPA",
+    "passing_rate": "O'tish darajasi",
+    "gpa_trend": "GPA dinamikasi",
+    "faculty_comparison": "Fakultetlar bo'yicha",
+    "top_students": "Eng yaxshi talabalar",
+    "subject_performance": "Fanlar bo'yicha o'zlashtirish"
+  },
+  "olap": {
+    "title": "OLAP tahlil",
+    "select_dimensions": "O'lchovlarni tanlang",
+    "select_measures": "O'lchamlarni tanlang",
+    "filters": "Filtrlar",
+    "execute": "Bajarish",
+    "drill_down": "Drill-down",
+    "roll_up": "Roll-up",
+    "slice": "Slice",
+    "dice": "Dice",
+    "pivot": "Pivot"
+  },
+  "common": {
+    "save": "Saqlash",
+    "cancel": "Bekor qilish",
+    "edit": "Tahrirlash",
+    "delete": "O'chirish",
+    "create": "Yaratish",
+    "search": "Qidirish",
+    "loading": "Yuklanmoqda...",
+    "no_data": "Ma'lumot yo'q",
+    "actions": "Amallar"
+  }
+}

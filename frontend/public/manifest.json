@@ -1,0 +1,22 @@
+{
+  "short_name": "Student OLAP",
+  "name": "Student Rating OLAP System",
+  "description": "Talabalar reyting natijalarini OLAP modeli orqali tahlil qilish",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1677ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
