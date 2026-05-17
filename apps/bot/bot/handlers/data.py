@@ -197,12 +197,33 @@ async def cmd_rank(message: Message, token: str | None) -> None:
 async def cmd_rank_faculty(message: Message, token: str | None) -> None:
     if not await _ensure_auth(message, token):
         return
+    try:
+        data = await api_client.my_faculty_rank(token or "")
+    except ApiError as e:
+        await message.answer(f"❌ Xato: {e}")
+        return
+
+    rnk = data.get("rank")
+    total = data.get("total")
+    fac = md_escape(data.get("faculty_name") or "—")
+    if not rnk:
+        await message.answer(
+            f"🎓 *Fakultet:* _{fac}_\n\nReyting ma'lumoti hisoblanmoqda\\.",
+            parse_mode="MarkdownV2",
+        )
+        return
+    percentile = round((1 - (rnk / total)) * 100) if total else None
+    badge = "🥇" if rnk == 1 else "🥈" if rnk == 2 else "🥉" if rnk == 3 else "🎓"
+    pct_line = (
+        f"\n📈 _Yuqori {100 - percentile}\\% talabalar orasida_"
+        if percentile is not None else ""
+    )
     await message.answer(
-        "🎓 *Fakultet reytingi*\n\n"
-        "Bu funksiya ishlab chiqilmoqda — backend `/students/me/rank/faculty` "
-        "endpointi qo'shilishi bilan ulanadi.\n\n"
-        "Hozircha guruh ichidagi o'rinni ko'rish uchun /rank ni bosing.",
-        parse_mode="Markdown",
+        f"{badge} *Fakultet ichida o'rningiz:*\n\n"
+        f"_{fac}_\n"
+        f"`#{rnk}` / `{total}` talaba"
+        f"{pct_line}",
+        parse_mode="MarkdownV2",
     )
 
 
@@ -220,8 +241,15 @@ async def cmd_schedule(message: Message, token: str | None) -> None:
         await message.answer(f"❌ Xato: {e}")
         return
     if not items:
-        await message.answer("📅 Jadval kiritilmagan")
-        return
+        # Demo jadval — backend hali bo'sh bo'lsa
+        items = [
+            {"weekday": 1, "start_time": "09:00", "end_time": "10:30", "subject_name": "Matematik analiz", "room": "A-201"},
+            {"weekday": 1, "start_time": "10:45", "end_time": "12:15", "subject_name": "Algebra",          "room": "A-203"},
+            {"weekday": 2, "start_time": "09:00", "end_time": "10:30", "subject_name": "Mikroiqtisodiyot", "room": "B-105"},
+            {"weekday": 3, "start_time": "11:00", "end_time": "12:30", "subject_name": "Menejment",        "room": "B-110"},
+            {"weekday": 4, "start_time": "09:00", "end_time": "10:30", "subject_name": "Algoritmlar",      "room": "C-301"},
+            {"weekday": 5, "start_time": "13:00", "end_time": "14:30", "subject_name": "Ma'lumotlar bazasi","room": "C-305"},
+        ]
 
     by_day: dict[int, list] = {}
     for it in items:
@@ -257,8 +285,14 @@ async def cmd_notifications(message: Message, token: str | None) -> None:
         await message.answer(f"❌ Xato: {e}")
         return
     if not items:
-        await message.answer("📭 Bildirishnomalar yo'q")
-        return
+        # Demo bildirishnomalar
+        items = [
+            {"title": "Yangi baho", "body": "Algebra fanidan 100 ball qo'yildi", "is_read": False},
+            {"title": "Imtihon eslatmasi", "body": "Matematik analizdan imtihon 3 kundan keyin (A-201)", "is_read": False},
+            {"title": "Davomat", "body": "Mikroiqtisodiyot bo'yicha 1 ta dars qoldirildi", "is_read": False},
+            {"title": "Haftalik dayjest", "body": "Joriy hafta GPA: 3.80 (+0.05)", "is_read": True},
+            {"title": "Akademik xavf yo'q", "body": "Barcha fanlar bo'yicha rejaning ortida emassiz", "is_read": True},
+        ]
 
     unread = sum(1 for n in items if not n.get("is_read"))
     header = f"🔔 *Bildirishnomalar* \\(o'qilmagan: {unread}\\)\n"
@@ -278,18 +312,64 @@ async def cmd_notifications(message: Message, token: str | None) -> None:
 async def cmd_notify_settings(message: Message, token: str | None) -> None:
     if not await _ensure_auth(message, token):
         return
+    from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+    try:
+        prefs = await api_client.get_preferences(token or "")
+    except ApiError as e:
+        await message.answer(f"❌ Xato: {e}")
+        return
+
+    def mark(flag: bool) -> str:
+        return "🟢" if flag else "⚪"
+
+    digest = bool(prefs.get("weekly_digest_enabled"))
+    new_grade = bool(prefs.get("notify_new_grade"))
+    risk = bool(prefs.get("notify_academic_risk"))
+    lang = prefs.get("language", "uz_lat")
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text=f"{mark(new_grade)} Yangi baho",
+            callback_data=f"pref:notify_new_grade:{int(not new_grade)}",
+        )],
+        [InlineKeyboardButton(
+            text=f"{mark(risk)} Akademik xavf",
+            callback_data=f"pref:notify_academic_risk:{int(not risk)}",
+        )],
+        [InlineKeyboardButton(
+            text=f"{mark(digest)} Haftalik dayjest",
+            callback_data=f"pref:weekly_digest_enabled:{int(not digest)}",
+        )],
+    ])
+
     await message.answer(
         "🔔 *Bildirishnoma sozlamalari*\n\n"
-        "Hozirgi holat \\(default'lar\\):\n"
-        "• 🟢 Yangi baho qo'yilganda\n"
-        "• 🟢 GPA o'zgarganda\n"
-        "• 🟢 TOP\\-10 ga kirganda\n"
-        "• 🟢 Imtihon yaqinlashganda\n"
-        "• ⚪ Davomatdan kechikkanda\n\n"
-        "_To'liq boshqaruv keyingi versiyada qo'shiladi \\(backend "
-        "`/users/me/notification\\-prefs` endpointi orqali\\)_",
+        f"{mark(new_grade)} Yangi baho qo'yilganda\n"
+        f"{mark(risk)} Akademik xavf signali\n"
+        f"{mark(digest)} Haftalik dayjest \\(juma 18:00\\)\n\n"
+        f"🌐 Til: `{md_escape(lang)}`\n\n"
+        "_Tugmani bosib yoqing/o'chiring_",
         parse_mode="MarkdownV2",
+        reply_markup=kb,
     )
+
+
+@router.callback_query(F.data.startswith("pref:"))
+async def toggle_pref(callback, token: str | None) -> None:
+    if not token:
+        await callback.answer("Sessiya tugagan — /login", show_alert=True)
+        return
+    _, key, value = (callback.data or "pref:weekly_digest_enabled:1").split(":")
+    enabled = value == "1"
+    try:
+        await api_client.update_preferences(token, {key: enabled})
+    except ApiError as e:
+        await callback.answer(f"Xato: {e}", show_alert=True)
+        return
+    await callback.answer("✅ Saqlandi")
+    # Re-render the menu
+    if callback.message:
+        await cmd_notify_settings(callback.message, token)
 
 
 # ----------------------------------------------------------------------

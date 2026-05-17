@@ -22,6 +22,180 @@ from app.models.oltp.user import User, UserRole
 router = APIRouter(prefix="/my", tags=["Mening hisobim"])
 
 
+@router.get("/rank/faculty")
+def my_faculty_rank(
+    user: User = Depends(get_current_user),
+    oltp: Session = Depends(get_oltp_db),
+    olap: Session = Depends(get_olap_db),
+) -> dict[str, Any]:
+    """Joriy talabaning fakultet ichida GPA bo'yicha o'rni."""
+    student = _link_student(user, oltp)
+    if not student:
+        return {"rank": None, "total": None, "message": "Talaba bog'lanmagan"}
+
+    # Find student's faculty via group → specialty → faculty
+    group = student.group
+    faculty_name = None
+    if group and group.specialty and group.specialty.faculty:
+        faculty_name = group.specialty.faculty.name
+
+    if not faculty_name:
+        return {"rank": None, "total": None, "message": "Fakultet aniqlanmadi"}
+
+    rank = olap.execute(
+        text(
+            """
+            WITH gpa_rank AS (
+                SELECT ds.student_id, AVG(f.gpa_points) AS gpa,
+                       RANK() OVER (ORDER BY AVG(f.gpa_points) DESC) AS rnk
+                FROM fact_student_grades f
+                JOIN dim_student ds ON f.student_key = ds.student_key
+                JOIN dim_faculty fac ON f.faculty_key = fac.faculty_key
+                WHERE fac.faculty_name = :fname
+                GROUP BY ds.student_id
+            )
+            SELECT rnk, (SELECT COUNT(*) FROM gpa_rank) AS total
+            FROM gpa_rank WHERE student_id = :sid
+            """
+        ),
+        {"sid": student.student_id, "fname": faculty_name},
+    ).mappings().first()
+
+    return {
+        "rank": rank["rnk"] if rank else None,
+        "total": rank["total"] if rank else None,
+        "faculty_name": faculty_name,
+    }
+
+
+@router.get("/exams/upcoming")
+def my_upcoming_exams(
+    limit: int = 5,
+    user: User = Depends(get_current_user),
+    oltp: Session = Depends(get_oltp_db),
+) -> dict[str, Any]:
+    """Talabaning yaqinlashayotgan imtihonlari (demo: kelasi 30 kun)."""
+    from datetime import datetime, timedelta
+    from app.models.oltp.hemis import ExamSchedule
+
+    student = _link_student(user, oltp)
+    if not student:
+        return {"items": [], "message": "Talaba bog'lanmagan"}
+
+    now = datetime.utcnow()
+    end = now + timedelta(days=30)
+    exams = (
+        oltp.query(ExamSchedule)
+        .filter(ExamSchedule.exam_date >= now, ExamSchedule.exam_date <= end)
+        .order_by(ExamSchedule.exam_date)
+        .limit(limit)
+        .all()
+    )
+    items = [
+        {
+            "id": e.id,
+            "exam_date": e.exam_date.isoformat(),
+            "room": e.room,
+            "exam_type": e.exam_type,
+            "subject_id": e.subject_id,
+        }
+        for e in exams
+    ]
+    return {"items": items, "count": len(items)}
+
+
+@router.get("/attendance")
+def my_attendance_summary(
+    user: User = Depends(get_current_user),
+    oltp: Session = Depends(get_oltp_db),
+    olap: Session = Depends(get_olap_db),
+) -> dict[str, Any]:
+    """Talaba davomat statistikasi (foiz + xavfli fanlar)."""
+    student = _link_student(user, oltp)
+    if not student:
+        return {"avg": None, "by_subject": [], "message": "Talaba bog'lanmagan"}
+
+    avg = olap.execute(
+        text(
+            """
+            SELECT ROUND(AVG(f.attendance_percentage)::numeric, 2) AS avg_att,
+                   MIN(f.attendance_percentage) AS min_att,
+                   COUNT(*) AS samples
+            FROM fact_student_grades f
+            JOIN dim_student ds ON f.student_key = ds.student_key
+            WHERE ds.student_id = :sid
+            """
+        ),
+        {"sid": student.student_id},
+    ).mappings().first() or {}
+
+    by_subject = olap.execute(
+        text(
+            """
+            SELECT s.subject_name, ROUND(AVG(f.attendance_percentage)::numeric, 2) AS att
+            FROM fact_student_grades f
+            JOIN dim_student ds ON f.student_key = ds.student_key
+            JOIN dim_subject s ON f.subject_key = s.subject_key
+            WHERE ds.student_id = :sid
+            GROUP BY s.subject_name
+            ORDER BY att ASC
+            """
+        ),
+        {"sid": student.student_id},
+    ).mappings().all()
+
+    return {
+        "avg": float(avg["avg_att"]) if avg.get("avg_att") is not None else None,
+        "min": float(avg["min_att"]) if avg.get("min_att") is not None else None,
+        "samples": avg.get("samples", 0),
+        "by_subject": [{"subject": r["subject_name"], "att": float(r["att"])} for r in by_subject],
+    }
+
+
+@router.get("/top-classmates")
+def my_top_classmates(
+    limit: int = 5,
+    user: User = Depends(get_current_user),
+    oltp: Session = Depends(get_oltp_db),
+    olap: Session = Depends(get_olap_db),
+) -> dict[str, Any]:
+    """Talabaning guruh ichida TOP nechta klassmati."""
+    student = _link_student(user, oltp)
+    if not student or not student.group:
+        return {"items": []}
+
+    rows = olap.execute(
+        text(
+            """
+            SELECT ds.student_id, ds.full_name,
+                   ROUND(AVG(f.gpa_points)::numeric, 3) AS gpa,
+                   ROUND(AVG(f.grade_value)::numeric, 2) AS avg_grade
+            FROM fact_student_grades f
+            JOIN dim_student ds ON f.student_key = ds.student_key
+            WHERE ds.group_name = :grp
+            GROUP BY ds.student_id, ds.full_name
+            ORDER BY gpa DESC
+            LIMIT :lim
+            """
+        ),
+        {"grp": student.group.name, "lim": limit},
+    ).mappings().all()
+
+    return {
+        "items": [
+            {
+                "student_id": r["student_id"],
+                "name": r["full_name"],
+                "gpa": float(r["gpa"]) if r["gpa"] is not None else None,
+                "avg_grade": float(r["avg_grade"]) if r["avg_grade"] is not None else None,
+                "is_me": r["student_id"] == student.student_id,
+            }
+            for r in rows
+        ],
+        "group_name": student.group.name,
+    }
+
+
 @router.get("/grades")
 def my_grades(
     page: int = 1,

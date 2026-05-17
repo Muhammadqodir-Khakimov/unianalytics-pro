@@ -6,6 +6,7 @@ from aiogram.types import CallbackQuery
 
 from ..keyboards.inline import main_menu_inline, settings_inline
 from . import data as data_handlers
+from . import tz_commands as tz
 from .start import HELP
 
 router = Router(name="menu_cb")
@@ -48,12 +49,18 @@ async def help_menu(callback: CallbackQuery) -> None:
 
 # Boshqa tugmalar — handler komandasini chaqiramiz (message orqali javob beradi).
 _DISPATCH = {
-    "menu:gpa": data_handlers.cmd_gpa,
-    "menu:grades": data_handlers.cmd_grades,
-    "menu:schedule": data_handlers.cmd_schedule,
+    "menu:gpa":           data_handlers.cmd_gpa,
+    "menu:grades":        data_handlers.cmd_grades,
+    "menu:schedule":      data_handlers.cmd_schedule,
     "menu:notifications": data_handlers.cmd_notifications,
-    "menu:profile": data_handlers.cmd_profile,
-    "menu:rank": data_handlers.cmd_rank,
+    "menu:profile":       data_handlers.cmd_profile,
+    "menu:rank":          data_handlers.cmd_rank,
+    "menu:rank_faculty":  data_handlers.cmd_rank_faculty,
+    "menu:top":           tz.cmd_top,
+    "menu:davomat":       tz.cmd_davomat,
+    "menu:imtihon":       tz.cmd_imtihon,
+    "menu:aloqa":         tz.cmd_aloqa,
+    "menu:notify_settings": data_handlers.cmd_notify_settings,
 }
 
 

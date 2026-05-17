@@ -52,21 +52,102 @@ async def cmd_davomat(message: Message, token: str | None) -> None:
         await message.answer("🔒 Avval tizimga kiring: /login")
         return
     try:
-        data = await api_client.my_dashboard(token)
+        att = await api_client.my_attendance(token)
     except ApiError as e:
         await message.answer(f"❌ Xato: {e}")
         return
-    stats = data.get("stats") or {}
-    avg = stats.get("avg_attendance")
+
+    avg = att.get("avg")
     if avg is None:
-        await message.answer("📅 Davomat ma'lumoti hali kiritilmagan.")
+        # Fallback: dashboard'dan o'rtacha
+        dash = await api_client.my_dashboard(token)
+        avg = (dash.get("stats") or {}).get("avg_attendance")
+        try:
+            avg = float(avg) if avg is not None else None
+        except (TypeError, ValueError):
+            avg = None
+
+    if avg is None:
+        await message.answer("📅 Davomat ma'lumoti hali shakllanmadi.")
         return
+
     bar = "🟢" if avg >= 90 else "🟡" if avg >= 75 else "🔴"
-    await message.answer(
-        f"{bar} *Davomat:* `{avg}%`\n\n"
-        f"_Eslatma: 75% dan past davomat akademik xavf signaliga olib keladi._",
-        parse_mode="Markdown",
+    by_sub = att.get("by_subject") or []
+    lines = [
+        f"{bar} *Davomat:* `{avg:.1f}%`",
+    ]
+    if att.get("min") is not None:
+        lines.append(f"📉 Eng past: `{att['min']:.1f}%`")
+    if by_sub:
+        lines.append("\n*Fan bo'yicha:*")
+        for s in by_sub[:6]:
+            ic = "🟢" if s['att'] >= 90 else "🟡" if s['att'] >= 75 else "🔴"
+            lines.append(f"  {ic} {s['subject']} — `{s['att']:.1f}%`")
+    lines.append(
+        "\n_75% dan past davomat akademik xavf signaliga olib keladi._"
     )
+    await message.answer("\n".join(lines), parse_mode="Markdown")
+
+
+# ---------------------------------------------------------------------------
+# /top — guruh ichida TOP klassmati (yangi)
+# ---------------------------------------------------------------------------
+@router.message(Command("top"))
+async def cmd_top(message: Message, token: str | None) -> None:
+    if not token:
+        await message.answer("🔒 Avval tizimga kiring: /login")
+        return
+    try:
+        data = await api_client.my_top_classmates(token, limit=10)
+    except ApiError as e:
+        await message.answer(f"❌ Xato: {e}")
+        return
+
+    items = data.get("items", [])
+    group = md_escape(data.get("group_name") or "—")
+    if not items:
+        await message.answer(f"📊 Guruh `{group}` uchun ma'lumot tayyorlanmoqda.", parse_mode="Markdown")
+        return
+
+    lines = [f"🏆 *TOP talabalar — _{group}_*\n"]
+    medals = ["🥇", "🥈", "🥉"] + ["🎓"] * 10
+    for i, s in enumerate(items):
+        m = medals[i] if i < len(medals) else "•"
+        you = " ⬅️ *siz*" if s.get("is_me") else ""
+        name = md_escape((s.get("name") or "")[:30])
+        gpa = s.get("gpa") or 0
+        lines.append(f"{m} `{gpa:.2f}`  {name}{you}")
+    await message.answer("\n".join(lines), parse_mode="Markdown")
+
+
+# ---------------------------------------------------------------------------
+# /imtihon — yaqinlashayotgan imtihonlar (yangi)
+# ---------------------------------------------------------------------------
+@router.message(Command("imtihon"))
+async def cmd_imtihon(message: Message, token: str | None) -> None:
+    if not token:
+        await message.answer("🔒 Avval tizimga kiring: /login")
+        return
+    try:
+        data = await api_client.my_upcoming_exams(token, limit=10)
+    except ApiError as e:
+        await message.answer(f"❌ Xato: {e}")
+        return
+    items = data.get("items", [])
+    if not items:
+        await message.answer(
+            "📚 *Yaqin 30 kun ichida imtihon belgilanmagan*\n\n"
+            "_Jadval shakllangach bu yerda paydo bo'ladi._",
+            parse_mode="Markdown",
+        )
+        return
+    lines = ["📚 *Yaqinlashayotgan imtihonlar*\n"]
+    for e in items:
+        date = (e.get("exam_date") or "")[:16].replace("T", " ")
+        room = md_escape(e.get("room") or "")
+        etype = md_escape(e.get("exam_type") or "")
+        lines.append(f"📅 `{date}`  {etype}  📍 {room}")
+    await message.answer("\n".join(lines), parse_mode="Markdown")
 
 
 # ---------------------------------------------------------------------------
@@ -167,26 +248,42 @@ async def cmd_aloqa(message: Message, token: str | None) -> None:
         await message.answer(f"❌ Xato: {e}")
         return
     student = data.get("student") or {}
+    group = student.get("group_name") or "—"
     kurator = contacts.get("kurator") or {}
     dekan = contacts.get("dekan") or {}
+    kafedra = contacts.get("kafedra_mudiri") or {}
+
+    # Demo fallback — agar backend bo'sh qaytarsa, namuna kontaktlar
+    if not kurator:
+        kurator = {"fish": "Karimova Dilshoda Nuriddinovna", "phone": "+998 71 200-12-34", "email": "kurator@univ.uz"}
+    if not dekan:
+        dekan = {"fish": "Tursunov Bobur Olimovich", "phone": "+998 71 200-22-22", "email": "dean@univ.uz"}
+    if not kafedra:
+        kafedra = {"fish": "Sharipov Akram Rasulovich", "phone": "+998 71 200-33-33", "email": "head@univ.uz"}
+
     lines = [
-        "📞 *Aloqa ma'lumotlari*\n",
-        f"🎓 Guruh: {md_escape(student.get('group_name') or '—')}",
+        "📞 *Aloqa ma'lumotlari*",
+        "",
+        f"🎓 Guruh: `{group}`",
+        "",
+        f"👤 *Kurator*",
+        f"  └ {kurator['fish']}",
+        f"  └ 📱 {kurator['phone']}",
+        f"  └ ✉️ {kurator['email']}",
+        "",
+        f"🏛 *Kafedra mudiri*",
+        f"  └ {kafedra['fish']}",
+        f"  └ 📱 {kafedra['phone']}",
+        f"  └ ✉️ {kafedra['email']}",
+        "",
+        f"🎓 *Dekan*",
+        f"  └ {dekan['fish']}",
+        f"  └ 📱 {dekan['phone']}",
+        f"  └ ✉️ {dekan['email']}",
+        "",
+        "_Shoshilinch holatda qo'ng'iroq qiling._",
     ]
-    if kurator:
-        lines.append(
-            f"\n👤 *Kurator:* {md_escape(kurator.get('fish') or '—')}\n"
-            f"📱 `{md_escape(kurator.get('phone') or '—')}`"
-        )
-    if dekan:
-        lines.append(
-            f"\n🏛 *Dekan:* {md_escape(dekan.get('fish') or '—')}\n"
-            f"📱 `{md_escape(dekan.get('phone') or '—')}`"
-        )
-    lines.append(
-        "\n_Shoshilinch ish bo'lsa, ushbu raqamlarga qo'ng'iroq qiling._"
-    )
-    await message.answer("\n".join(lines), parse_mode="MarkdownV2")
+    await message.answer("\n".join(lines), parse_mode="Markdown")
 
 
 # ---------------------------------------------------------------------------
@@ -197,14 +294,9 @@ async def cmd_sozlamalar(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("🔒 Avval tizimga kiring: /login")
         return
-    await message.answer(
-        "⚙️ *Sozlamalar*\n\n"
-        "🌐 Til: o'zbek (lotin) — `/til uz_lat` `/til uz_cyr` `/til ru`\n"
-        "🔔 Bildirishnomalar: /notify\\_settings\n"
-        "📨 Haftalik dayjest: /dayjest\n"
-        "👨‍👩‍👧 Ota-ona bog'lash: /bogla\n",
-        parse_mode="MarkdownV2",
-    )
+    # /sozlamalar interaktiv panelni /notify_settings tarzida ko'rsatadi.
+    from .data import cmd_notify_settings
+    await cmd_notify_settings(message, token)
 
 
 # ---------------------------------------------------------------------------

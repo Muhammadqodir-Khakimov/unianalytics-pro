@@ -34,23 +34,29 @@ def main_menu_inline() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="📊 GPA", callback_data="menu:gpa"),
-            InlineKeyboardButton(text="🏆 Reyting", callback_data="menu:rank"),
+            InlineKeyboardButton(text="🏆 Guruh reytingi", callback_data="menu:rank"),
         ],
         [
-            InlineKeyboardButton(text="📝 Baholar",
-                                 callback_data="menu:grades"),
-            InlineKeyboardButton(text="📅 Jadval",
-                                 callback_data="menu:schedule"),
+            InlineKeyboardButton(text="🎓 Fakultet o'rni", callback_data="menu:rank_faculty"),
+            InlineKeyboardButton(text="📈 TOP talabalar", callback_data="menu:top"),
         ],
         [
-            InlineKeyboardButton(text="🔔 Xabarlar",
-                                 callback_data="menu:notifications"),
-            InlineKeyboardButton(text="👤 Profil",
-                                 callback_data="menu:profile"),
+            InlineKeyboardButton(text="📝 Baholar", callback_data="menu:grades"),
+            InlineKeyboardButton(text="📅 Davomat", callback_data="menu:davomat"),
         ],
         [
-            InlineKeyboardButton(text="⚙️ Sozlamalar",
-                                 callback_data="menu:settings"),
+            InlineKeyboardButton(text="🗓 Jadval", callback_data="menu:schedule"),
+            InlineKeyboardButton(text="📚 Imtihonlar", callback_data="menu:imtihon"),
+        ],
+        [
+            InlineKeyboardButton(text="🔔 Xabarlar", callback_data="menu:notifications"),
+            InlineKeyboardButton(text="👤 Profil", callback_data="menu:profile"),
+        ],
+        [
+            InlineKeyboardButton(text="📞 Aloqa", callback_data="menu:aloqa"),
+            InlineKeyboardButton(text="⚙️ Sozlamalar", callback_data="menu:notify_settings"),
+        ],
+        [
             InlineKeyboardButton(text="❓ Yordam", callback_data="menu:help"),
         ],
     ])

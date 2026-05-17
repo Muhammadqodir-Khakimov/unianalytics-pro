@@ -152,6 +152,33 @@ class ApiClient:
         except ApiError:
             return {}
 
+    # ------------------------------------------------------------------
+    # Kengaytirilgan funksiyalar
+    # ------------------------------------------------------------------
+    async def my_faculty_rank(self, token: str) -> dict:
+        return await self._request("GET", "/my/rank/faculty", token=token)
+
+    async def my_attendance(self, token: str) -> dict:
+        return await self._request("GET", "/my/attendance", token=token)
+
+    async def my_top_classmates(self, token: str, limit: int = 10) -> dict:
+        return await self._request(
+            "GET", "/my/top-classmates", token=token, params={"limit": limit}
+        )
+
+    async def my_upcoming_exams(self, token: str, limit: int = 5) -> dict:
+        return await self._request(
+            "GET", "/my/exams/upcoming", token=token, params={"limit": limit}
+        )
+
+    async def get_preferences(self, token: str) -> dict:
+        return await self._request("GET", "/users/me/preferences", token=token)
+
+    async def update_preferences(self, token: str, patch: dict) -> dict:
+        return await self._request(
+            "PATCH", "/users/me/preferences", token=token, json=patch
+        )
+
 
 # Global singleton
 api_client = ApiClient()
