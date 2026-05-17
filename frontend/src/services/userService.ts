@@ -6,6 +6,7 @@ export const userService = {
   updateProfile: (payload: { full_name?: string; email?: string }) =>
     api.put('/users/me', payload).then((r) => r.data),
   list: () => api.get('/users').then((r) => r.data),
+  unlinked: () => api.get('/users/unlinked').then((r) => r.data),
   changeRole: (userId: number, role: string) =>
     api.put(`/users/${userId}/role?role=${role}`).then((r) => r.data),
   toggleActive: (userId: number, is_active: boolean) =>

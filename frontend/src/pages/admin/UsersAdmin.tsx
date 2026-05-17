@@ -12,9 +12,7 @@ export function UsersAdmin() {
   const usersQ = useQuery({ queryKey: ['admin', 'users'], queryFn: userService.list });
   const unlinkedQ = useQuery({
     queryKey: ['admin', 'unlinked'],
-    queryFn: () => userService['list'].name && fetch('/api/v1/users/unlinked', {
-      headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('auth-storage') || '{}')?.state?.accessToken}` },
-    }).then((r) => r.json()),
+    queryFn: userService.unlinked,
   });
 
   const roleM = useMutation({
