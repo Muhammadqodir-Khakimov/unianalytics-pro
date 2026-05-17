@@ -79,8 +79,20 @@ class MyDashboard extends Equatable {
       return const [];
     }
 
-    double? toDouble(dynamic v) => (v as num?)?.toDouble();
-    int? toInt(dynamic v) => (v as num?)?.toInt();
+    // Backend Decimal qiymatlarni JSON string sifatida qaytaradi
+    // ("90.63", "3.800"). Avval string, keyin son sifatida parse qilamiz.
+    double? toDouble(dynamic v) {
+      if (v == null) return null;
+      if (v is num) return v.toDouble();
+      if (v is String) return double.tryParse(v);
+      return null;
+    }
+    int? toInt(dynamic v) {
+      if (v == null) return null;
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v);
+      return null;
+    }
 
     return MyDashboard(
       role: (json['role'] ?? 'unknown') as String,

@@ -22,6 +22,56 @@ from app.models.oltp.user import User, UserRole
 router = APIRouter(prefix="/my", tags=["Mening hisobim"])
 
 
+@router.get("/grades")
+def my_grades(
+    page: int = 1,
+    page_size: int = 10,
+    user: User = Depends(get_current_user),
+    oltp: Session = Depends(get_oltp_db),
+) -> dict[str, Any]:
+    """Joriy talabaning baholari (bot/mobile uchun)."""
+    page = max(1, int(page or 1))
+    page_size = max(1, min(int(page_size or 10), 100))
+
+    student = _link_student(user, oltp)
+    if not student:
+        return {"items": [], "total": 0, "total_pages": 0, "page": page,
+                "page_size": page_size, "message": "Talaba hisobiga bog'lanmagan"}
+
+    q = (
+        oltp.query(Grade, Subject)
+        .outerjoin(Subject, Subject.id == Grade.subject_id)
+        .filter(Grade.student_id == student.id)
+        .order_by(Grade.grade_date.desc())
+    )
+    total = q.count()
+    rows = q.offset((page - 1) * page_size).limit(page_size).all()
+
+    type_names = {1: "JN", 2: "ON", 3: "YN", 4: "Yakuniy"}
+    items = [
+        {
+            "id": g.id,
+            "subject_id": g.subject_id,
+            "subject_name": s.name if s else f"Fan #{g.subject_id}",
+            "assessment_type": type_names.get(g.assessment_type_id, ""),
+            "grade_value": float(g.grade_value),
+            "attendance_percentage": float(g.attendance_percentage) if g.attendance_percentage else None,
+            "is_passed": g.is_passed,
+            "semester": g.semester,
+            "academic_year": g.academic_year,
+            "grade_date": g.grade_date.isoformat() if g.grade_date else None,
+        }
+        for g, s in rows
+    ]
+    return {
+        "items": items,
+        "total": total,
+        "total_pages": max(1, -(-total // page_size)),
+        "page": page,
+        "page_size": page_size,
+    }
+
+
 @router.get("/dashboard")
 def my_dashboard(
     user: User = Depends(get_current_user),

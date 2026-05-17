@@ -21,7 +21,9 @@ class GradesRemoteDataSource {
     String? semester,
     String? academicYear,
   }) async {
-    final res = await _dio.get('/grades', queryParameters: {
+    // Backend `/my/grades` joriy talabaga tegishli baholar (bot/mobile uchun).
+    // `/grades` esa admin/dekan uchun — barcha baholar.
+    final res = await _dio.get('/my/grades', queryParameters: {
       'page': page,
       'page_size': pageSize,
       // ignore: use_null_aware_elements — map entry null-aware syntax issue

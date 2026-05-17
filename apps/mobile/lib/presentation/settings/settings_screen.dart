@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../domain/entities/user.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/biometric_service.dart';
 
@@ -11,11 +14,66 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsControllerProvider);
     final controller = ref.read(settingsControllerProvider.notifier);
+    final auth = ref.watch(authControllerProvider);
+    final user = auth is Authenticated ? auth.user : null;
+
+    Future<void> handleLogout() async {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Akkauntdan chiqish'),
+          content: const Text(
+            'Tizimdan chiqishni istaysizmi? Saqlangan ma\'lumotlar tozalanadi.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Bekor qilish'),
+            ),
+            FilledButton.tonal(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Chiqish'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      await ref.read(authControllerProvider.notifier).logout();
+      if (!context.mounted) return;
+      context.go('/login');
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Sozlamalar')),
       body: ListView(
         children: [
+          if (user != null) ...[
+            const _SectionHeader('Akkaunt'),
+            ListTile(
+              leading: CircleAvatar(
+                radius: 24,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                child: Text(
+                  user.fullName.isEmpty ? '?' : user.fullName[0].toUpperCase(),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              title: Text(user.fullName.isEmpty ? user.username : user.fullName),
+              subtitle: Text('${_roleLabel(user.role)} · ${user.email}'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout_outlined),
+              title: const Text('Akkauntdan chiqish'),
+              subtitle: const Text(
+                'Boshqa foydalanuvchi sifatida kirish uchun chiqing',
+              ),
+              onTap: handleLogout,
+            ),
+            const Divider(),
+          ],
           const _SectionHeader('Ko‘rinish'),
           RadioGroup<ThemeMode>(
             groupValue: settings.themeMode,
@@ -93,6 +151,18 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 }
+
+String _roleLabel(UserRole role) {
+  switch (role) {
+    case UserRole.admin:   return 'Administrator';
+    case UserRole.rector:  return 'Rektor';
+    case UserRole.dean:    return 'Dekan';
+    case UserRole.teacher: return 'O\'qituvchi';
+    case UserRole.student: return 'Talaba';
+    case UserRole.unknown: return 'Foydalanuvchi';
+  }
+}
+
 
 class _SectionHeader extends StatelessWidget {
   final String text;

@@ -103,8 +103,9 @@ class ApiClient:
     async def my_grades(
         self, token: str, page: int = 1, page_size: int = 10
     ) -> dict:
+        # /my/grades — talabaga bog'langan baholar (bot uchun)
         return await self._request(
-            "GET", "/grades",
+            "GET", "/my/grades",
             token=token,
             params={"page": page, "page_size": page_size},
         )

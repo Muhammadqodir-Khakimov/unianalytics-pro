@@ -43,7 +43,7 @@ HELP = (
     "/jadval — dars jadvali\n"
     "/profile — shaxsiy ma'lumot\n\n"
     "👨‍👩‍👧 *Ota-ona / aloqa:*\n"
-    "/bogla <HEMIS_ID> — farzandga bog'lanish so'rovi\n"
+    "/bogla [HEMIS_ID] — farzandga bog'lanish so'rovi\n"
     "/aloqa — kurator/dekan kontaktlari\n\n"
     "⚙️ *Sozlamalar va xabarlar:*\n"
     "/sozlamalar — til + bildirishnomalar\n"
