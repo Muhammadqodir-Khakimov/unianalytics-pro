@@ -28,6 +28,7 @@ from app.models.oltp.hemis import (
     Thesis,
     ThesisStatus,
 )
+from app.models.oltp.schedule import LessonType, ScheduleEntry
 from app.models.oltp.student import Student
 from app.models.oltp.subject import Subject
 from app.models.oltp.teacher import Teacher

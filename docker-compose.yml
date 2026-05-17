@@ -146,6 +146,22 @@ services:
       - olap-network
     command: npm run dev -- --host 0.0.0.0
 
+  bot:
+    build:
+      context: ./apps/bot
+      dockerfile: Dockerfile
+    container_name: olap-bot
+    restart: unless-stopped
+    env_file:
+      - ./apps/bot/.env
+    depends_on:
+      backend:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    networks:
+      - olap-network
+
   nginx:
     image: nginx:alpine
     container_name: olap-nginx

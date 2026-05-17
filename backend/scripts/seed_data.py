@@ -72,12 +72,22 @@ def reset_database():
 
 
 def create_users(db: Session):
-    """4 ta rol uchun test userlar."""
+    """4 ta rol uchun test userlar.
+
+    Production'da parollar env variable orqali beriladi:
+      ADMIN_PASSWORD, DEKAN_PASSWORD, TEACHER_PASSWORD, STUDENT_PASSWORD
+    Agar berilmagan bo'lsa — dev default'lar ishlatiladi.
+    """
+    import os
     users = [
-        ("admin", "admin@university.uz", "Admin User", "admin123", UserRole.ADMIN),
-        ("dekan", "dekan@university.uz", "Dekan Dekanov", "dekan123", UserRole.DEKAN),
-        ("teacher", "teacher@university.uz", "O'qituvchi Test", "teacher123", UserRole.TEACHER),
-        ("student", "student@university.uz", "Talaba Test", "student123", UserRole.STUDENT),
+        ("admin", "admin@university.uz", "Admin User",
+         os.environ.get("ADMIN_PASSWORD", "admin123"), UserRole.ADMIN),
+        ("dekan", "dekan@university.uz", "Dekan Dekanov",
+         os.environ.get("DEKAN_PASSWORD", "dekan123"), UserRole.DEKAN),
+        ("teacher", "teacher@university.uz", "O'qituvchi Test",
+         os.environ.get("TEACHER_PASSWORD", "teacher123"), UserRole.TEACHER),
+        ("student", "student@university.uz", "Talaba Test",
+         os.environ.get("STUDENT_PASSWORD", "student123"), UserRole.STUDENT),
     ]
     for username, email, full_name, password, role in users:
         u = User(
