@@ -8,11 +8,35 @@ if [ "$APP_ENV" = "production" ] && [ "$AUTO_INIT_DB" = "true" ]; then
 import sys
 sys.path.insert(0, '.')
 try:
+    from sqlalchemy import inspect, text
     from app.database import OLTPBase, OLAPBase, oltp_engine, olap_engine
     from app import models
     OLTPBase.metadata.create_all(oltp_engine)
     OLAPBase.metadata.create_all(olap_engine)
     print('  Tables created')
+
+    # Reconcile drifted columns (create_all does not ALTER existing tables).
+    # Model has columns added later — bring DB schema up to date.
+    with oltp_engine.connect() as conn:
+        ins = inspect(conn)
+        for tbl in OLTPBase.metadata.sorted_tables:
+            if tbl.name not in ins.get_table_names():
+                continue
+            existing = {c['name'] for c in ins.get_columns(tbl.name)}
+            for col in tbl.columns:
+                if col.name in existing:
+                    continue
+                ctype = col.type.compile(oltp_engine.dialect)
+                nullable = '' if col.nullable else ' NOT NULL'
+                default = ''
+                if col.server_default is not None and hasattr(col.server_default, 'arg'):
+                    default = f\" DEFAULT '{col.server_default.arg}'\"
+                ddl = f'ALTER TABLE {tbl.name} ADD COLUMN IF NOT EXISTS {col.name} {ctype}{default}'
+                try:
+                    conn.execute(text(ddl)); conn.commit()
+                    print(f'  + {tbl.name}.{col.name}')
+                except Exception as ex:
+                    print(f'  ! {tbl.name}.{col.name}: {ex}')
 
     # Seed only if empty
     from sqlalchemy.orm import sessionmaker
