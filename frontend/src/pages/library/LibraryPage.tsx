@@ -6,8 +6,10 @@ import dayjs from 'dayjs';
 import { libraryService } from '@/services/hemisService';
 import { PageHeader } from '@/components/common/PageHeader';
 import { EmptyState } from '@/components/common/EmptyState';
+import { useAuthStore } from '@/store/authStore';
 
 export function LibraryPage() {
+  const currentUserId = useAuthStore((s) => s.user?.id ?? 1);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string | undefined>();
   const [availableOnly, setAvailableOnly] = useState(false);
@@ -155,7 +157,7 @@ export function LibraryPage() {
         onOk={() =>
           loanM.mutate({
             book_id: loanOpen.id,
-            student_id: 1, // TODO: joriy talaba
+            student_id: currentUserId,
             days: 14,
           })
         }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuthStore } from '@/store/authStore';
 import {
   Card,
   Steps,
@@ -33,6 +34,7 @@ interface GradeRow {
 }
 
 export function GradeEntryWizard() {
+  const currentTeacherId = useAuthStore((s) => s.user?.id ?? 1);
   const [step, setStep] = useState(0);
   const [groupId, setGroupId] = useState<number | null>(null);
   const [subjectId, setSubjectId] = useState<number | null>(null);
@@ -64,7 +66,7 @@ export function GradeEntryWizard() {
           gradeService.create({
             student_id: r.student_id,
             subject_id: subjectId,
-            teacher_id: 1, // TODO: joriy o'qituvchi ID
+            teacher_id: currentTeacherId,
             assessment_type_id: assessmentId,
             grade_value: r.grade_value,
             attendance_percentage: r.attendance,

@@ -257,7 +257,10 @@ def detect_anomalies(olap: Session = Depends(get_olap_db)):
             d = dict(r)
             d["faculty"] = fac["faculty_name"]
             d["faculty_mean"] = round(float(fac["mean_grade"]), 2)
-            d["deviation"] = round(d["avg_grade"] - float(fac["mean_grade"]), 2)
+            d["avg_grade"] = float(d["avg_grade"]) if d.get("avg_grade") is not None else None
+            d["deviation"] = round(
+                float(d["avg_grade"] or 0) - float(fac["mean_grade"]), 2
+            )
             d["type"] = "g'ayrioddiy past" if d["deviation"] < 0 else "g'ayrioddiy yuqori"
             anomalies.append(d)
 
