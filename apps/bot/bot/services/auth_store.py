@@ -14,6 +14,7 @@ from ..config import settings
 
 
 _TOKEN_KEY = "bot:auth:{chat_id}"
+_TOKEN_KEY_PREFIX = "bot:auth:"
 _TTL_SECONDS = 7 * 24 * 60 * 60  # 7 kun
 
 
@@ -34,6 +35,12 @@ class _InMemoryStore:
 
     async def close(self) -> None:
         self._data.clear()
+
+    async def find_by_token(self, access_token: str) -> int | None:
+        for cid, payload in self._data.items():
+            if payload.get("access_token") == access_token:
+                return cid
+        return None
 
 
 class _RedisStore:
@@ -61,6 +68,35 @@ class _RedisStore:
 
     async def close(self) -> None:
         await self._redis.aclose()
+
+    async def find_by_token(self, access_token: str) -> int | None:
+        """Reverse-lookup: berilgan access_tokenga ega chat_idni topish.
+
+        Redis'da `bot:auth:*` kalitlarini scan qilamiz. Kichik miqyosli bot
+        uchun yetarli (yuzlab foydalanuvchilar).
+        """
+        cursor = 0
+        while True:
+            cursor, keys = await self._redis.scan(
+                cursor=cursor, match=f"{_TOKEN_KEY_PREFIX}*", count=100
+            )
+            for k in keys:
+                raw = await self._redis.get(k)
+                if not raw:
+                    continue
+                try:
+                    data = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                if data.get("access_token") == access_token:
+                    suffix = k.split(":", 2)[-1] if isinstance(k, str) else k.decode().split(":", 2)[-1]
+                    try:
+                        return int(suffix)
+                    except ValueError:
+                        return None
+            if cursor == 0:
+                break
+        return None
 
 
 class AuthStore:
@@ -100,6 +136,9 @@ class AuthStore:
 
     async def clear(self, chat_id: int) -> None:
         await self._impl.clear(chat_id)
+
+    async def find_chat_by_token(self, access_token: str) -> int | None:
+        return await self._impl.find_by_token(access_token)
 
 
 auth_store = AuthStore()

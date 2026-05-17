@@ -121,6 +121,119 @@ async def cmd_top(message: Message, token: str | None) -> None:
 
 
 # ---------------------------------------------------------------------------
+# /trend — GPA dinamikasi semestrlar bo'yicha (ASCII chart)
+# ---------------------------------------------------------------------------
+@router.message(Command("trend"))
+async def cmd_trend(message: Message, token: str | None) -> None:
+    if not token:
+        await message.answer("🔒 Avval tizimga kiring: /login")
+        return
+    try:
+        data = await api_client.my_dashboard(token)
+    except ApiError as e:
+        await message.answer(f"❌ Xato: {e}")
+        return
+
+    trend = data.get("gpa_trend") or []
+    if not trend:
+        await message.answer(
+            "📈 *GPA dinamikasi*\n\n"
+            "Hozircha bitta semestr ma'lumoti.\n"
+            "_Keyingi semestrda dinamika ko'rinadi._",
+            parse_mode="Markdown",
+        )
+        return
+
+    # ASCII bar chart
+    values = [float(p.get("gpa") or 0) for p in trend]
+    max_v = max(values) if values else 1
+    blocks = "▁▂▃▄▅▆▇█"
+    lines = ["📈 *GPA dinamikasi*\n"]
+    for i, p in enumerate(trend):
+        g = float(p.get("gpa") or 0)
+        ratio = g / max_v if max_v else 0
+        bar_len = int(ratio * 10)
+        bar = "█" * bar_len + "░" * (10 - bar_len)
+        sem = p.get("semester") or ""
+        year = p.get("academic_year") or ""
+        lines.append(f"`{bar}` `{g:.2f}`  {year} {sem}")
+
+    # Trend yo'nalishi
+    if len(values) >= 2:
+        delta = values[-1] - values[-2]
+        emoji = "📈" if delta > 0 else "📉" if delta < 0 else "➡️"
+        lines.append(f"\n{emoji} O'zgarish: `{delta:+.2f}`")
+    await message.answer("\n".join(lines), parse_mode="Markdown")
+
+
+# ---------------------------------------------------------------------------
+# /maqsad — semestr maqsadi (motivatsion)
+# ---------------------------------------------------------------------------
+@router.message(Command("maqsad"))
+async def cmd_maqsad(message: Message, token: str | None) -> None:
+    if not token:
+        await message.answer("🔒 Avval tizimga kiring: /login")
+        return
+    try:
+        data = await api_client.my_dashboard(token)
+    except ApiError as e:
+        await message.answer(f"❌ Xato: {e}")
+        return
+
+    stats = data.get("stats") or {}
+    role = data.get("role", "")
+    try:
+        gpa = float(stats.get("avg_gpa") or 0)
+    except (TypeError, ValueError):
+        gpa = 0
+
+    if role != "student":
+        # Boshqa rollar uchun — KPI maqsadlari
+        avg_grade = stats.get("avg_grade") or "—"
+        pass_rate = stats.get("passing_rate")
+        lines = [
+            "🎯 *KPI maqsadlari*\n",
+            f"O'rtacha ball: `{avg_grade}`",
+        ]
+        if pass_rate is not None:
+            lines.append(f"O'tish foizi: `{pass_rate}%`")
+            try:
+                pct = float(pass_rate)
+                target = 90
+                gap = target - pct
+                if gap > 0:
+                    lines.append(f"\n📌 90% ga yetishga `{gap:.1f}%` qoldi")
+                else:
+                    lines.append("\n✅ 90% maqsadiga erishilgan!")
+            except (TypeError, ValueError):
+                pass
+        await message.answer("\n".join(lines), parse_mode="Markdown")
+        return
+
+    # Talaba uchun GPA maqsadlari
+    targets = [
+        (3.0, "✅ O'rta", "Asosiy minimum"),
+        (3.5, "🥉 Yaxshi", "Stipendiya minimumi"),
+        (3.8, "🥈 A'lo", "Yuqori reyting"),
+        (4.5, "🥇 Mukammal", "Imtiyozli stipendiya"),
+    ]
+    lines = [
+        f"🎯 *Maqsadlar*\n",
+        f"Hozirgi GPA: `{gpa:.2f}`\n",
+    ]
+    for t, label, desc in targets:
+        if gpa >= t:
+            lines.append(f"✅ `{t}`  {label} — _{desc}_")
+        else:
+            gap = t - gpa
+            lines.append(f"⬜ `{t}`  {label} — `+{gap:.2f}` qoldi")
+            lines[-1] += f"\n      _{desc}_"
+
+    lines.append("\n💡 _Har bahoda kreditga vaznlangan tarzda ta'sir qiladi._")
+    await message.answer("\n".join(lines), parse_mode="Markdown")
+
+
+# ---------------------------------------------------------------------------
 # /xavf — risk talabalar (teacher/dean/admin uchun)
 # ---------------------------------------------------------------------------
 @router.message(Command("xavf"))

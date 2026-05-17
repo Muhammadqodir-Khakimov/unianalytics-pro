@@ -40,6 +40,8 @@ HELP = (
     "/reyting — GPA, o'rtacha ball, guruh ichidagi o'rin\n"
     "/rank_faculty — fakultet ichidagi o'rningiz\n"
     "/top — guruhda TOP-10 talabalar\n"
+    "/trend — GPA dinamikasi (semestrlar)\n"
+    "/maqsad — GPA bo'yicha maqsadlar\n"
     "/fanlar — fanlar bo'yicha baholar (sahifalanadi)\n"
     "/davomat — fan kesimida davomat foizi\n"
     "/imtihon — yaqinlashayotgan imtihonlar\n"

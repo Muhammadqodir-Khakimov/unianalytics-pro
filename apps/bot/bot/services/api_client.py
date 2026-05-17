@@ -42,6 +42,7 @@ class ApiClient:
         json: dict | None = None,
         data: dict | None = None,
         params: dict | None = None,
+        _refreshed: bool = False,
     ) -> Any:
         headers = {}
         if token:
@@ -56,6 +57,16 @@ class ApiClient:
             raise ApiError(f"Backend bilan bog'lanib bo'lmadi: {e}") from e
 
         if r.status_code == 401:
+            # Avtomatik refresh — faqat bir marta urinish (loop oldini olish)
+            if not _refreshed and token:
+                new_token = await self._try_refresh(token)
+                if new_token:
+                    return await self._request(
+                        method, path,
+                        token=new_token,
+                        json=json, data=data, params=params,
+                        _refreshed=True,
+                    )
             raise ApiError("Sessiya tugagan — qayta kirish kerak", 401)
         if r.status_code >= 400:
             detail = self._extract_detail(r)
@@ -64,6 +75,46 @@ class ApiClient:
         if r.headers.get("content-type", "").startswith("application/json"):
             return r.json()
         return r.text
+
+    async def _try_refresh(self, expired_access_token: str) -> str | None:
+        """Eskirgan access_tokenni saqlangan refresh_token orqali yangilash.
+
+        auth_store dan refresh_tokenni topish uchun access_token bo'yicha
+        chat_id'ni qidiramiz (token -> chat_id reverse lookup).
+        """
+        from .auth_store import auth_store
+        try:
+            chat_id = await auth_store.find_chat_by_token(expired_access_token)
+        except AttributeError:
+            return None
+        if not chat_id:
+            return None
+        saved = await auth_store.get(chat_id)
+        if not saved:
+            return None
+        refresh = saved.get("refresh_token")
+        if not refresh:
+            return None
+        try:
+            r = await self._client.post("/auth/refresh", json={"refresh_token": refresh})
+        except httpx.RequestError:
+            return None
+        if r.status_code != 200:
+            logger.info("Refresh muvaffaqiyatsiz: {} {}", r.status_code, r.text[:120])
+            return None
+        body = r.json()
+        new_access = body.get("access_token")
+        new_refresh = body.get("refresh_token") or refresh
+        if new_access:
+            await auth_store.save(
+                chat_id,
+                access_token=new_access,
+                refresh_token=new_refresh,
+                user=saved.get("user"),
+            )
+            logger.info("Token avtomatik refresh qilindi (chat_id={})", chat_id)
+            return new_access
+        return None
 
     @staticmethod
     def _extract_detail(r: httpx.Response) -> str:

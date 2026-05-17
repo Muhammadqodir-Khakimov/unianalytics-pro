@@ -34,19 +34,25 @@ def main_menu_inline() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
             InlineKeyboardButton(text="📊 GPA", callback_data="menu:gpa"),
-            InlineKeyboardButton(text="🏆 Guruh reytingi", callback_data="menu:rank"),
+            InlineKeyboardButton(text="🏆 Guruh", callback_data="menu:rank"),
+            InlineKeyboardButton(text="🎓 Fakultet", callback_data="menu:rank_faculty"),
         ],
         [
-            InlineKeyboardButton(text="🎓 Fakultet o'rni", callback_data="menu:rank_faculty"),
             InlineKeyboardButton(text="📈 TOP talabalar", callback_data="menu:top"),
+            InlineKeyboardButton(text="⚠️ Risk guruhi", callback_data="menu:xavf"),
         ],
         [
             InlineKeyboardButton(text="📝 Baholar", callback_data="menu:grades"),
             InlineKeyboardButton(text="📅 Davomat", callback_data="menu:davomat"),
+            InlineKeyboardButton(text="📈 Trend", callback_data="menu:trend"),
         ],
         [
             InlineKeyboardButton(text="🗓 Jadval", callback_data="menu:schedule"),
             InlineKeyboardButton(text="📚 Imtihonlar", callback_data="menu:imtihon"),
+        ],
+        [
+            InlineKeyboardButton(text="🏛 Fakultetlar", callback_data="menu:top_fakultet"),
+            InlineKeyboardButton(text="🎯 Maqsad", callback_data="menu:maqsad"),
         ],
         [
             InlineKeyboardButton(text="🔔 Xabarlar", callback_data="menu:notifications"),
@@ -57,6 +63,7 @@ def main_menu_inline() -> InlineKeyboardMarkup:
             InlineKeyboardButton(text="⚙️ Sozlamalar", callback_data="menu:notify_settings"),
         ],
         [
+            InlineKeyboardButton(text="🔄 Yangilash", callback_data="menu:home"),
             InlineKeyboardButton(text="❓ Yordam", callback_data="menu:help"),
         ],
     ])
