@@ -42,6 +42,28 @@ services:
         value: https://student-olap-backend.onrender.com/api/v1
     autoDeploy: true
 
+  - type: worker
+    name: student-olap-bot
+    runtime: docker
+    rootDir: apps/bot
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false                       # @BotFather tokeni — qo'lda kiritiladi
+      - key: BACKEND_API_URL
+        value: https://student-olap-backend.onrender.com/api/v1
+      - key: BOT_MODE
+        value: polling
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: student-olap-redis
+          property: connectionString
+      - key: RATE_LIMIT_PER_MIN
+        value: "20"
+    autoDeploy: true
+
   - type: redis
     name: student-olap-redis
     plan: free
