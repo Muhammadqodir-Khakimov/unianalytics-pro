@@ -40,9 +40,26 @@ export function StudentDashboard() {
     );
   }
 
-  const { student, stats, rank, gpa_trend, by_subject } = data;
-  const isLowGPA = (stats.avg_gpa || 0) < 2.5;
-  const isExcellent = (stats.avg_gpa || 0) >= 3.5;
+  // Backend Decimal'larni JSON string ('3.800') qaytaradi — number'ga cast qilish shart.
+  const num = (v: any): number => {
+    if (v === null || v === undefined) return 0;
+    if (typeof v === 'number') return v;
+    const n = parseFloat(String(v));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const { student, stats: rawStats, rank, gpa_trend, by_subject } = data;
+  const stats = {
+    ...rawStats,
+    avg_gpa: num(rawStats.avg_gpa),
+    avg_grade: num(rawStats.avg_grade),
+    avg_attendance: num(rawStats.avg_attendance),
+    grades_count: num(rawStats.grades_count),
+    subjects_count: num(rawStats.subjects_count),
+    passed_count: num(rawStats.passed_count),
+    failed_count: num(rawStats.failed_count),
+  };
+  const isLowGPA = stats.avg_gpa < 2.5;
+  const isExcellent = stats.avg_gpa >= 3.5;
 
   const trendOption = smoothChart({
     title: { text: 'GPA dinamikasi', left: 'center', textStyle: { fontWeight: 600, fontSize: 16 } },

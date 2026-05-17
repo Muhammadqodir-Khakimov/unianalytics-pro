@@ -1,9 +1,11 @@
 // UniAnalytics PRO Service Worker
 // PWA — offline support, caching, push notifications
 
-const CACHE_NAME = 'unianalytics-v1.0.0';
-const STATIC_CACHE = 'unianalytics-static-v1';
-const API_CACHE = 'unianalytics-api-v1';
+// CACHE versiyasi — sayt yangilanganda bumpni oshiring.
+// Activate paytida boshqa nomli barcha eski cache'lar avtomatik o'chiriladi.
+const CACHE_NAME = 'unianalytics-v2-vercel';
+const STATIC_CACHE = 'unianalytics-static-v2';
+const API_CACHE = 'unianalytics-api-v2';
 
 const STATIC_FILES = [
   '/',

@@ -27,7 +27,31 @@ export function DeanDashboard() {
   if (isLoading) return <Card loading style={{ margin: 24 }} />;
   if (!data) return null;
 
-  const { faculty, stats, by_specialty, by_course } = data;
+  const num = (v: any): number => {
+    if (v === null || v === undefined) return 0;
+    if (typeof v === 'number') return v;
+    const n = parseFloat(String(v));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const { faculty, stats: rawStats, by_specialty: rawSpec, by_course: rawCourse } = data;
+  const stats = {
+    ...rawStats,
+    avg_grade: num(rawStats.avg_grade),
+    avg_gpa: num(rawStats.avg_gpa),
+    avg_attendance: num(rawStats.avg_attendance),
+    passing_rate: num(rawStats.passing_rate),
+    total_students: num(rawStats.total_students),
+    total_teachers: num(rawStats.total_teachers),
+    total_subjects: num(rawStats.total_subjects),
+    total_grades: num(rawStats.total_grades),
+  };
+  const by_specialty = (rawSpec || []).map((s: any) => ({
+    ...s, avg_grade: num(s.avg_grade), avg_gpa: num(s.avg_gpa), students: num(s.students),
+  }));
+  const by_course = (rawCourse || []).map((c: any) => ({
+    ...c, avg_grade: num(c.avg_grade), avg_gpa: num(c.avg_gpa),
+    students: num(c.students), course: num(c.course),
+  }));
 
   const courseOption = {
     title: { text: 'Kurs bo\'yicha o\'zlashtirish', left: 'center' },

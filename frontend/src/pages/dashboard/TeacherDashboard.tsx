@@ -24,7 +24,30 @@ export function TeacherDashboard() {
     );
   }
 
-  const { teacher, stats, by_subject, recent_grades } = data;
+  const num = (v: any): number => {
+    if (v === null || v === undefined) return 0;
+    if (typeof v === 'number') return v;
+    const n = parseFloat(String(v));
+    return Number.isFinite(n) ? n : 0;
+  };
+  const { teacher, stats: rawStats, by_subject: rawSubjects, recent_grades } = data;
+  const stats = {
+    ...rawStats,
+    avg_grade: num(rawStats.avg_grade),
+    avg_grade_given: num(rawStats.avg_grade ?? rawStats.avg_grade_given),
+    avg_gpa: num(rawStats.avg_gpa),
+    grades_given: num(rawStats.grades_given),
+    students_taught: num(rawStats.students_taught),
+    subjects_taught: num(rawStats.subjects_taught),
+  };
+  // by_subject ham Decimal string'larga ega bo'lishi mumkin
+  const by_subject = (rawSubjects || []).map((s: any) => ({
+    ...s,
+    avg_grade: num(s.avg_grade),
+    avg_gpa: num(s.avg_gpa),
+    students_count: num(s.students_count),
+    grades_count: num(s.grades_count),
+  }));
 
   const subjectOption = {
     title: { text: 'Fanlar bo\'yicha statistika', left: 'center' },
