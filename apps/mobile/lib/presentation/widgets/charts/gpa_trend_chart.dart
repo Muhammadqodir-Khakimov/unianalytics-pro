@@ -35,8 +35,11 @@ class GpaTrendChart extends StatelessWidget {
     final maxY = (points.map((p) => p.y).reduce((a, b) => a > b ? a : b) + 0.2)
         .clamp(0.0, 4.0);
 
-    return AspectRatio(
-      aspectRatio: 1.7,
+    // Konstanta balandlik (220px) — keng ekranda cheksiz cho'zilmaslik
+    // uchun. Avval AspectRatio 1.7 edi: tablet va landscape mobilda
+    // chart balandligi 400px+ bo'lib ekranni ortiqcha egallardi.
+    return SizedBox(
+      height: 220,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
         child: LineChart(

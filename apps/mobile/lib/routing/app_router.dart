@@ -62,7 +62,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final locked = ref.read(appLockProvider);
       final loc = state.matchedLocation;
 
-      if (auth is AuthInitial || auth is AuthLoading) {
+      // Boshlang'ich — splash'da bootstrap kutamiz.
+      if (auth is AuthInitial) {
+        return loc == '/splash' ? null : '/splash';
+      }
+      // Login/Register'da AuthLoading — user submit qildi, jo'natmaymiz
+      // (aks holda race: splash bootstrap'i in-progress login'ni uzadi).
+      if (auth is AuthLoading) {
+        if (loc == '/login' || loc == '/register') return null;
         return loc == '/splash' ? null : '/splash';
       }
       if (auth is Authenticated) {

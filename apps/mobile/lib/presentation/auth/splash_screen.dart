@@ -18,7 +18,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(authControllerProvider.notifier).bootstrap();
+      // Faqat haqiqiy boshlang'ich holatda bootstrap chaqirilsin.
+      // AuthLoading paytida login allaqachon ishlamoqda — uni buzmaymiz
+      // (router AuthLoading'ni /splash ga yo'naltirgan bo'lsa ham).
+      final state = ref.read(authControllerProvider);
+      if (state is AuthInitial) {
+        ref.read(authControllerProvider.notifier).bootstrap();
+      }
     });
   }
 
