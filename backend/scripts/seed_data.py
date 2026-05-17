@@ -28,7 +28,11 @@ from app.models.oltp.subject import Subject, SubjectType
 from app.models.oltp.teacher import Teacher
 from app.models.oltp.user import User, UserRole
 
-fake = Faker("uz_UZ")
+# uz_UZ locale faker da bo'lmasligi mumkin — ru_RU ishlatamiz
+try:
+    fake = Faker("uz_UZ")
+except (AttributeError, KeyError):
+    fake = Faker("ru_RU")
 random.seed(42)
 Faker.seed(42)
 

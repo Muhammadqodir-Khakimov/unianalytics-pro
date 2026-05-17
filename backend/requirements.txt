@@ -24,7 +24,7 @@ redis==5.0.1
 flower==2.0.1
 
 # Data generation & ETL
-faker==24.0.0
+faker>=30.0.0
 pandas==2.2.0
 numpy==1.26.4
 
