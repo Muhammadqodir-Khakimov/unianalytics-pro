@@ -1,4 +1,4 @@
-import { Layout, Menu, Avatar, Dropdown, Select, Button, theme, Tooltip } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Select, Button, theme, Tooltip, Drawer, Grid } from 'antd';
 import {
   DashboardOutlined,
   ApartmentOutlined,
@@ -24,6 +24,7 @@ import {
   MailOutlined,
   FileProtectOutlined,
   HomeOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
@@ -35,6 +36,7 @@ import { GlobalSearch } from '@/components/common/GlobalSearch';
 import { NotificationsBell } from '@/components/common/NotificationsBell';
 
 const { Header, Sider, Content } = Layout;
+const { useBreakpoint } = Grid;
 
 export function AppLayout() {
   const navigate = useNavigate();
@@ -47,6 +49,11 @@ export function AppLayout() {
   const collapsed = sidebarCollapsed;
   const setCollapsed = setSidebarCollapsed;
   const { token } = theme.useToken();
+
+  // Responsive breakpoints — md = 768px
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -167,36 +174,66 @@ export function AppLayout() {
     localStorage.setItem('lang', lng);
   };
 
+  const sideMenu = (
+    <>
+      <div
+        style={{
+          color: 'white',
+          textAlign: 'center',
+          padding: 16,
+          fontWeight: 'bold',
+          fontSize: collapsed && !isMobile ? 14 : 18,
+          background: 'rgba(0,0,0,0.2)',
+        }}
+      >
+        {collapsed && !isMobile ? 'SR' : '📊 Student OLAP'}
+      </div>
+      <Menu
+        theme="dark"
+        mode="inline"
+        selectedKeys={[location.pathname]}
+        defaultOpenKeys={['olap', 'academic']}
+        items={menuItems}
+        onClick={({ key }) => {
+          if (key.startsWith('/')) navigate(key);
+          if (isMobile) setDrawerOpen(false);
+        }}
+        style={{ borderRight: 0 }}
+      />
+    </>
+  );
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed} theme="dark" width={240}>
-        <div
-          style={{
-            color: 'white',
-            textAlign: 'center',
-            padding: 16,
-            fontWeight: 'bold',
-            fontSize: collapsed ? 14 : 18,
-            background: 'rgba(0,0,0,0.2)',
-          }}
-        >
-          {collapsed ? 'SR' : '📊 Student OLAP'}
-        </div>
-        <Menu
+      {/* Sider — desktop'da doimo, mobil'da Drawer'da */}
+      {!isMobile && (
+        <Sider
+          collapsible
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
           theme="dark"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          defaultOpenKeys={['olap', 'academic']}
-          items={menuItems}
-          onClick={({ key }) => { if (key.startsWith('/')) navigate(key); }}
-        />
-      </Sider>
+          width={240}
+          breakpoint="lg"
+        >
+          {sideMenu}
+        </Sider>
+      )}
+
+      <Drawer
+        placement="left"
+        open={isMobile && drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        styles={{ body: { padding: 0, background: '#001529' }, header: { display: 'none' } }}
+        width={260}
+      >
+        {sideMenu}
+      </Drawer>
 
       <Layout>
         <Header
           style={{
             background: token.colorBgContainer,
-            padding: '0 24px',
+            padding: isMobile ? '0 12px' : '0 24px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -204,47 +241,90 @@ export function AppLayout() {
             position: 'sticky',
             top: 0,
             zIndex: 10,
+            height: isMobile ? 56 : 64,
+            gap: 8,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <h2 style={{ margin: 0, color: token.colorText }}>{t('app_name')}</h2>
-            <GlobalSearch />
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 24, minWidth: 0, flex: 1 }}>
+            {isMobile && (
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => setDrawerOpen(true)}
+                style={{ marginRight: 4 }}
+              />
+            )}
+            {!isMobile && (
+              <h2 style={{ margin: 0, color: token.colorText, whiteSpace: 'nowrap' }}>{t('app_name')}</h2>
+            )}
+            {!isMobile && <GlobalSearch />}
           </div>
 
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: isMobile ? 4 : 12, alignItems: 'center', flexShrink: 0 }}>
             <NotificationsBell />
 
             <Tooltip title={isDark ? "Yorug' rejim" : 'Tungi rejim'}>
-              <Button shape="circle" icon={isDark ? <SunOutlined /> : <MoonOutlined />} onClick={toggleTheme} />
+              <Button
+                shape="circle"
+                size={isMobile ? 'small' : 'middle'}
+                icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+                onClick={toggleTheme}
+              />
             </Tooltip>
 
-            <Select
-              value={i18n.language}
-              onChange={changeLang}
-              size="small"
-              style={{ width: 90 }}
-              suffixIcon={<GlobalOutlined />}
-              options={[
-                { value: 'uz', label: '🇺🇿 UZ' },
-                { value: 'qq', label: '🟢 QQ' },
-                { value: 'ru', label: '🇷🇺 RU' },
-                { value: 'en', label: '🇬🇧 EN' },
-              ]}
-            />
+            {!isMobile && (
+              <Select
+                value={i18n.language}
+                onChange={changeLang}
+                size="small"
+                style={{ width: 90 }}
+                suffixIcon={<GlobalOutlined />}
+                options={[
+                  { value: 'uz', label: '🇺🇿 UZ' },
+                  { value: 'qq', label: '🟢 QQ' },
+                  { value: 'ru', label: '🇷🇺 RU' },
+                  { value: 'en', label: '🇬🇧 EN' },
+                ]}
+              />
+            )}
 
             <Dropdown menu={userMenu} placement="bottomRight">
-              <Button type="text" style={{ display: 'flex', alignItems: 'center', gap: 8, height: 40 }}>
-                <Avatar icon={<UserOutlined />} style={{ background: '#1677ff' }} />
-                <div style={{ textAlign: 'left', lineHeight: 1.2 }}>
-                  <div>{user?.full_name || user?.username}</div>
-                  <div style={{ color: token.colorTextSecondary, fontSize: 11 }}>{user?.role}</div>
-                </div>
+              <Button
+                type="text"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  height: isMobile ? 36 : 40,
+                  paddingLeft: 4,
+                  paddingRight: isMobile ? 4 : 12,
+                }}
+              >
+                <Avatar
+                  size={isMobile ? 28 : 32}
+                  icon={<UserOutlined />}
+                  style={{ background: '#1677ff' }}
+                />
+                {!isMobile && (
+                  <div style={{ textAlign: 'left', lineHeight: 1.2, maxWidth: 140 }}>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {user?.full_name || user?.username}
+                    </div>
+                    <div style={{ color: token.colorTextSecondary, fontSize: 11 }}>{user?.role}</div>
+                  </div>
+                )}
               </Button>
             </Dropdown>
           </div>
         </Header>
 
-        <Content style={{ margin: 0, background: isDark ? '#141414' : '#f5f7fa', minHeight: 'calc(100vh - 64px)' }}>
+        <Content
+          style={{
+            margin: 0,
+            background: isDark ? '#141414' : '#f5f7fa',
+            minHeight: `calc(100vh - ${isMobile ? 56 : 64}px)`,
+          }}
+        >
           <Outlet />
         </Content>
       </Layout>

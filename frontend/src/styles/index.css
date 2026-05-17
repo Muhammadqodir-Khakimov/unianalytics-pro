@@ -63,15 +63,70 @@ h2, .h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; line-heigh
 h3, .h3 { font-size: 18px; font-weight: 600; line-height: 1.4; }
 h4, .h4 { font-size: 16px; font-weight: 600; line-height: 1.4; }
 
+/* ------------------------------------------------------------------
+   Sahifa konteyneri — responsive padding (mobile/tablet/desktop)
+   ------------------------------------------------------------------ */
 .olap-page {
   padding: 24px 32px;
   max-width: 1600px;
   margin: 0 auto;
   animation: fadeInUp 0.3s ease-out;
+  box-sizing: border-box;
+  width: 100%;
 }
 
-@media (max-width: 768px) {
-  .olap-page { padding: 16px; }
+/* Desktop large */
+@media (min-width: 1440px) {
+  .olap-page { padding: 32px 40px; }
+}
+
+/* Tablet (768-1023) */
+@media (max-width: 1023px) {
+  .olap-page { padding: 20px 24px; }
+}
+
+/* Mobil */
+@media (max-width: 767px) {
+  .olap-page { padding: 16px 12px; }
+}
+
+/* Kichkina mobil (< 380px) */
+@media (max-width: 380px) {
+  .olap-page { padding: 12px 8px; }
+}
+
+/* Ant Design Row/Col gutter mobil'da kichraytirish — gorizontal scroll oldini olish */
+@media (max-width: 767px) {
+  .ant-row { margin-left: -6px !important; margin-right: -6px !important; }
+  .ant-row > .ant-col { padding-left: 6px !important; padding-right: 6px !important; }
+
+  .ant-card-body { padding: 14px !important; }
+
+  /* Sticky header mobil'da kichraytirish */
+  .ant-layout-header {
+    padding: 0 12px !important;
+    height: 56px !important;
+    line-height: 56px !important;
+  }
+
+  /* Table'lar gorizontal scroll bilan */
+  .ant-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hero banner kichraytirish */
+  .hero-banner { padding: 18px !important; }
+  .hero-banner h1, .hero-banner .h1 { font-size: 22px !important; }
+
+  /* Tipografiya kichraytirish */
+  h1, .h1 { font-size: 22px !important; }
+  h2, .h2 { font-size: 18px !important; }
+  h3, .h3 { font-size: 16px !important; }
+
+  /* KPI card'lar */
+  .kpi-card { padding: 12px !important; }
+  .kpi-card .ant-statistic-content-value { font-size: 22px !important; }
 }
 
 @keyframes fadeInUp {

@@ -116,8 +116,17 @@ export function CrudTable<T extends { id: number }>({
 
   return (
     <div className="olap-page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1>{title || resource}</h1>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+          flexWrap: 'wrap',
+          gap: 12,
+        }}
+      >
+        <h1 style={{ margin: 0, minWidth: 0, flex: 1 }}>{title || resource}</h1>
         {canEdit && (
           <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
             {t('common.create')}
