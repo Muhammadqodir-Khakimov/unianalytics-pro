@@ -209,10 +209,17 @@ def list_invoices(db: Session = Depends(get_oltp_db)):
 
 @router.post("/webhook/click")
 async def click_webhook(request: Request, db: Session = Depends(get_oltp_db)):
-    """Click to'lov tasdiqlash webhook."""
+    """Click to'lov tasdiqlash webhook (signature + idempotency)."""
+    from app.services.webhook_security import verify_click_signature, is_duplicate
+
     payload = await request.json() if request.headers.get("content-type", "").startswith("application/json") else dict(await request.form())
-    if not click.verify_signature(payload, payload.get("sign_string", "")):
+
+    if not verify_click_signature(payload, payload.get("sign_string", "")):
         raise HTTPException(403, "Yaroqsiz signature")
+
+    idempotency_key = f"click:{payload.get('click_trans_id', '')}:{payload.get('action', '')}"
+    if is_duplicate(idempotency_key):
+        return {"error": 0, "error_note": "Already processed"}
 
     invoice_id = int(payload.get("merchant_trans_id", 0))
     invoice = db.query(Invoice).filter(Invoice.id == invoice_id).first()
@@ -232,10 +239,20 @@ async def click_webhook(request: Request, db: Session = Depends(get_oltp_db)):
 
 @router.post("/webhook/payme")
 async def payme_webhook(request: Request, db: Session = Depends(get_oltp_db)):
-    """Payme JSON-RPC webhook (qisqartirilgan)."""
+    """Payme JSON-RPC webhook (Basic auth + idempotency)."""
+    from app.services.webhook_security import verify_payme_auth, is_duplicate
+
+    auth = request.headers.get("Authorization", "")
+    if not verify_payme_auth(auth):
+        raise HTTPException(401, "Authorization required")
+
     body = await request.json()
     method = body.get("method")
     params = body.get("params", {})
+
+    idempotency_key = f"payme:{params.get('id', '')}:{method}"
+    if is_duplicate(idempotency_key):
+        return {"result": {"already_processed": True}}
 
     if method == "PerformTransaction":
         invoice_id = int(params.get("account", {}).get("invoice_id", 0))
@@ -249,3 +266,39 @@ async def payme_webhook(request: Request, db: Session = Depends(get_oltp_db)):
         return {"result": {"transaction": params.get("id"), "state": 2}}
 
     return {"result": {"allow": True}}
+
+
+@router.post("/webhook/stripe")
+async def stripe_webhook(request: Request, db: Session = Depends(get_oltp_db)):
+    """Stripe webhook (HMAC-SHA256 signature + idempotency)."""
+    from app.services.webhook_security import verify_stripe_signature, is_duplicate
+
+    payload = await request.body()
+    sig_header = request.headers.get("Stripe-Signature", "")
+
+    if not verify_stripe_signature(payload, sig_header):
+        raise HTTPException(403, "Invalid Stripe signature")
+
+    import json
+    event = json.loads(payload.decode())
+    event_id = event.get("id", "")
+
+    if is_duplicate(f"stripe:{event_id}"):
+        return {"received": True, "duplicate": True}
+
+    event_type = event.get("type", "")
+    data_object = event.get("data", {}).get("object", {})
+
+    if event_type == "checkout.session.completed":
+        invoice_id = data_object.get("metadata", {}).get("invoice_id")
+        if invoice_id:
+            invoice = db.query(Invoice).filter(Invoice.id == int(invoice_id)).first()
+            if invoice:
+                invoice.status = "paid"
+                invoice.paid_at = date.today()
+                invoice.paid_amount = float(data_object.get("amount_total", 0)) / 100
+                invoice.payment_method = "stripe"
+                invoice.transaction_id = data_object.get("id")
+                db.commit()
+
+    return {"received": True}

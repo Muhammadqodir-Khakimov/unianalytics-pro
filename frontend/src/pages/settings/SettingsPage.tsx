@@ -129,6 +129,7 @@ export function SettingsPage() {
                       style={{ width: 200 }}
                       options={[
                         { value: 'uz', label: "🇺🇿 O'zbek" },
+                        { value: 'qq', label: "🟢 Qaraqalpaqsha" },
                         { value: 'ru', label: '🇷🇺 Русский' },
                         { value: 'en', label: '🇬🇧 English' },
                       ]}

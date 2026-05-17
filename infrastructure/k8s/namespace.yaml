@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: unianalytics
+  labels:
+    name: unianalytics
+    environment: production

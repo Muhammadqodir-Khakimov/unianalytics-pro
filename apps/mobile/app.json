@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "UniAnalytics",
+    "slug": "unianalytics",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1677ff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "uz.unianalytics.mobile"
+    },
+    "android": {
+      "package": "uz.unianalytics.mobile",
+      "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-camera", "expo-local-authentication"]
+  }
+}

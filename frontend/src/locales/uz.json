@@ -1,5 +1,5 @@
 {
-  "app_name": "Talaba Reyting OLAP",
+  "app_name": "UniAnalytics PRO",
   "menu": {
     "dashboard": "Boshqaruv paneli",
     "olap": "OLAP tahlil",
@@ -12,7 +12,11 @@
     "faculties": "Fakultetlar",
     "reports": "Hisobotlar",
     "settings": "Sozlamalar",
-    "logout": "Chiqish"
+    "logout": "Chiqish",
+    "admin": "Administrator",
+    "tenants": "Tashkilotlar",
+    "universities": "Universitetlar",
+    "billing": "To'lovlar"
   },
   "auth": {
     "login_title": "Tizimga kirish",
@@ -29,13 +33,20 @@
     "username_required": "Foydalanuvchi nomini kiriting",
     "password_required": "Parolni kiriting",
     "login_success": "Muvaffaqiyatli kirildi",
-    "register_success": "Muvaffaqiyatli ro'yxatdan o'tildi"
+    "register_success": "Muvaffaqiyatli ro'yxatdan o'tildi",
+    "two_factor_title": "Ikki bosqichli autentifikatsiya",
+    "two_factor_code": "Tasdiqlash kodi",
+    "forgot_password": "Parolni unutdingizmi?",
+    "reset_password": "Parolni tiklash"
   },
   "roles": {
     "admin": "Administrator",
     "dekan": "Dekan",
     "teacher": "O'qituvchi",
-    "student": "Talaba"
+    "student": "Talaba",
+    "rector": "Rektor",
+    "ministry": "Vazirlik kuzatuvchi",
+    "super_admin": "Super Administrator"
   },
   "dashboard": {
     "title": "Boshqaruv paneli",
@@ -60,6 +71,30 @@
     "dice": "Dice",
     "pivot": "Pivot"
   },
+  "admin": {
+    "tenants_title": "Multi-tenant boshqaruvi",
+    "universities_title": "Universitetlar ro'yxati",
+    "new_tenant": "Yangi tashkilot",
+    "new_university": "Yangi universitet",
+    "plan": "Plan",
+    "subdomain": "Subdomain",
+    "status_active": "Faol",
+    "status_suspended": "To'xtatilgan",
+    "status_expired": "Muddati o'tgan",
+    "mrr": "Oylik daromad"
+  },
+  "billing": {
+    "plans": "Tarif rejalar",
+    "trial": "Trial",
+    "free": "Bepul",
+    "pro": "PRO",
+    "enterprise": "Enterprise",
+    "current_plan": "Joriy plan",
+    "upgrade": "Yuqori plan",
+    "invoice": "Hisob-faktura",
+    "paid": "To'langan",
+    "unpaid": "To'lanmagan"
+  },
   "common": {
     "save": "Saqlash",
     "cancel": "Bekor qilish",
@@ -69,6 +104,17 @@
     "search": "Qidirish",
     "loading": "Yuklanmoqda...",
     "no_data": "Ma'lumot yo'q",
-    "actions": "Amallar"
+    "actions": "Amallar",
+    "yes": "Ha",
+    "no": "Yo'q",
+    "confirm": "Tasdiqlash",
+    "back": "Orqaga",
+    "next": "Keyingi",
+    "submit": "Yuborish",
+    "close": "Yopish",
+    "export": "Eksport",
+    "import": "Import",
+    "filter": "Filtr",
+    "all": "Hammasi"
   }
 }

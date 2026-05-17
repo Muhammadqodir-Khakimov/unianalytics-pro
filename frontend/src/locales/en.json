@@ -1,5 +1,5 @@
 {
-  "app_name": "Student Rating OLAP",
+  "app_name": "UniAnalytics PRO",
   "menu": {
     "dashboard": "Dashboard",
     "olap": "OLAP Analysis",
@@ -12,7 +12,11 @@
     "faculties": "Faculties",
     "reports": "Reports",
     "settings": "Settings",
-    "logout": "Logout"
+    "logout": "Logout",
+    "admin": "Administrator",
+    "tenants": "Tenants",
+    "universities": "Universities",
+    "billing": "Billing"
   },
   "auth": {
     "login_title": "Sign in",
@@ -29,13 +33,20 @@
     "username_required": "Please enter username",
     "password_required": "Please enter password",
     "login_success": "Logged in successfully",
-    "register_success": "Registration successful"
+    "register_success": "Registration successful",
+    "two_factor_title": "Two-Factor Authentication",
+    "two_factor_code": "Verification Code",
+    "forgot_password": "Forgot password?",
+    "reset_password": "Reset Password"
   },
   "roles": {
     "admin": "Administrator",
     "dekan": "Dean",
     "teacher": "Teacher",
-    "student": "Student"
+    "student": "Student",
+    "rector": "Rector",
+    "ministry": "Ministry Viewer",
+    "super_admin": "Super Administrator"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -60,6 +71,30 @@
     "dice": "Dice",
     "pivot": "Pivot"
   },
+  "admin": {
+    "tenants_title": "Multi-tenant Management",
+    "universities_title": "Universities List",
+    "new_tenant": "New Tenant",
+    "new_university": "New University",
+    "plan": "Plan",
+    "subdomain": "Subdomain",
+    "status_active": "Active",
+    "status_suspended": "Suspended",
+    "status_expired": "Expired",
+    "mrr": "Monthly Recurring Revenue"
+  },
+  "billing": {
+    "plans": "Pricing Plans",
+    "trial": "Trial",
+    "free": "Free",
+    "pro": "PRO",
+    "enterprise": "Enterprise",
+    "current_plan": "Current Plan",
+    "upgrade": "Upgrade",
+    "invoice": "Invoice",
+    "paid": "Paid",
+    "unpaid": "Unpaid"
+  },
   "common": {
     "save": "Save",
     "cancel": "Cancel",
@@ -69,6 +104,17 @@
     "search": "Search",
     "loading": "Loading...",
     "no_data": "No data",
-    "actions": "Actions"
+    "actions": "Actions",
+    "yes": "Yes",
+    "no": "No",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "close": "Close",
+    "export": "Export",
+    "import": "Import",
+    "filter": "Filter",
+    "all": "All"
   }
 }

@@ -2,7 +2,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -10,10 +10,15 @@ from app.database import OLTPBase
 
 
 class UserRole(str, Enum):
-    ADMIN = "admin"
-    DEKAN = "dekan"
-    TEACHER = "teacher"
-    STUDENT = "student"
+    SUPER_ADMIN = "super_admin"        # platforma egasi (SaaS)
+    UNIVERSITY_ADMIN = "university_admin"  # tenant admin
+    ADMIN = "admin"                    # university admin alternativ nomi
+    RECTOR = "rector"                  # rektor — universitet rahbari
+    DEKAN = "dekan"                    # fakultet boshlig'i
+    TEACHER = "teacher"                # o'qituvchi
+    STUDENT = "student"                # talaba
+    MINISTRY_VIEWER = "ministry_viewer"  # vazirlik (read-only)
+    PUBLIC = "public"                  # tashqi (widget uchun)
 
 
 class User(OLTPBase):
@@ -31,6 +36,22 @@ class User(OLTPBase):
     )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # 2FA (TOTP)
+    totp_secret: Mapped[str | None] = mapped_column(String(64))
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # OAuth
+    google_id: Mapped[str | None] = mapped_column(String(128), unique=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(512))
+
+    # Tenant
+    tenant_id: Mapped[int | None] = mapped_column(Integer, index=True)
+
+    # Email verification
+    email_verification_token: Mapped[str | None] = mapped_column(String(128))
+
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow

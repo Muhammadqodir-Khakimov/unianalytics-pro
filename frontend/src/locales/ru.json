@@ -1,8 +1,8 @@
 {
-  "app_name": "Рейтинг студентов OLAP",
+  "app_name": "UniAnalytics PRO",
   "menu": {
     "dashboard": "Панель управления",
-    "olap": "OLAP анализ",
+    "olap": "OLAP-анализ",
     "cube": "Анализ куба",
     "pivot": "Сводная таблица",
     "students": "Студенты",
@@ -12,7 +12,11 @@
     "faculties": "Факультеты",
     "reports": "Отчёты",
     "settings": "Настройки",
-    "logout": "Выйти"
+    "logout": "Выйти",
+    "admin": "Администратор",
+    "tenants": "Организации",
+    "universities": "Университеты",
+    "billing": "Платежи"
   },
   "auth": {
     "login_title": "Вход в систему",
@@ -23,19 +27,26 @@
     "full_name": "ФИО",
     "role": "Роль",
     "login": "Войти",
-    "register": "Зарегистрироваться",
+    "register": "Регистрация",
     "login_link": "Уже есть аккаунт? Войти",
-    "register_link": "Нет аккаунта? Зарегистрироваться",
+    "register_link": "Нет аккаунта? Зарегистрируйтесь",
     "username_required": "Введите имя пользователя",
     "password_required": "Введите пароль",
-    "login_success": "Успешный вход",
-    "register_success": "Регистрация успешна"
+    "login_success": "Вход выполнен успешно",
+    "register_success": "Регистрация прошла успешно",
+    "two_factor_title": "Двухфакторная аутентификация",
+    "two_factor_code": "Код подтверждения",
+    "forgot_password": "Забыли пароль?",
+    "reset_password": "Сбросить пароль"
   },
   "roles": {
     "admin": "Администратор",
     "dekan": "Декан",
     "teacher": "Преподаватель",
-    "student": "Студент"
+    "student": "Студент",
+    "rector": "Ректор",
+    "ministry": "Наблюдатель министерства",
+    "super_admin": "Супер администратор"
   },
   "dashboard": {
     "title": "Панель управления",
@@ -44,14 +55,14 @@
     "avg_gpa": "Средний GPA",
     "passing_rate": "Процент сдачи",
     "gpa_trend": "Динамика GPA",
-    "faculty_comparison": "По факультетам",
+    "faculty_comparison": "Сравнение факультетов",
     "top_students": "Лучшие студенты",
     "subject_performance": "Успеваемость по предметам"
   },
   "olap": {
-    "title": "OLAP анализ",
+    "title": "OLAP-анализ",
     "select_dimensions": "Выберите измерения",
-    "select_measures": "Выберите меры",
+    "select_measures": "Выберите метрики",
     "filters": "Фильтры",
     "execute": "Выполнить",
     "drill_down": "Drill-down",
@@ -59,6 +70,30 @@
     "slice": "Slice",
     "dice": "Dice",
     "pivot": "Pivot"
+  },
+  "admin": {
+    "tenants_title": "Управление tenant",
+    "universities_title": "Список университетов",
+    "new_tenant": "Новая организация",
+    "new_university": "Новый университет",
+    "plan": "Тариф",
+    "subdomain": "Поддомен",
+    "status_active": "Активный",
+    "status_suspended": "Приостановлен",
+    "status_expired": "Истёк",
+    "mrr": "Месячная выручка"
+  },
+  "billing": {
+    "plans": "Тарифные планы",
+    "trial": "Trial",
+    "free": "Бесплатно",
+    "pro": "PRO",
+    "enterprise": "Enterprise",
+    "current_plan": "Текущий план",
+    "upgrade": "Перейти выше",
+    "invoice": "Счёт",
+    "paid": "Оплачено",
+    "unpaid": "Не оплачено"
   },
   "common": {
     "save": "Сохранить",
@@ -69,6 +104,17 @@
     "search": "Поиск",
     "loading": "Загрузка...",
     "no_data": "Нет данных",
-    "actions": "Действия"
+    "actions": "Действия",
+    "yes": "Да",
+    "no": "Нет",
+    "confirm": "Подтвердить",
+    "back": "Назад",
+    "next": "Далее",
+    "submit": "Отправить",
+    "close": "Закрыть",
+    "export": "Экспорт",
+    "import": "Импорт",
+    "filter": "Фильтр",
+    "all": "Все"
   }
 }

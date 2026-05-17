@@ -1,9 +1,27 @@
 """Monitoring va observability — Sentry + Prometheus."""
 import os
-from typing import Callable
+from typing import Any, Callable
 
 from fastapi import FastAPI, Request, Response
 from loguru import logger
+
+
+def _scrub_sensitive(event: dict[str, Any], hint: dict) -> dict[str, Any] | None:
+    """Sentry'ga yuborishdan oldin sensitive ma'lumotlarni tozalash."""
+    SENSITIVE_KEYS = {"password", "token", "secret", "authorization", "api_key", "totp", "totp_secret"}
+
+    def scrub(obj):
+        if isinstance(obj, dict):
+            return {k: ("***" if k.lower() in SENSITIVE_KEYS else scrub(v)) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [scrub(x) for x in obj]
+        return obj
+
+    if "request" in event and "data" in event["request"]:
+        event["request"]["data"] = scrub(event["request"]["data"])
+    if "extra" in event:
+        event["extra"] = scrub(event["extra"])
+    return event
 
 
 def setup_sentry(app: FastAPI) -> None:
@@ -18,18 +36,24 @@ def setup_sentry(app: FastAPI) -> None:
         from sentry_sdk.integrations.fastapi import FastApiIntegration
         from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
+        release = os.environ.get("APP_VERSION") or os.environ.get("GIT_SHA", "unknown")
         sentry_sdk.init(
             dsn=dsn,
+            release=f"unianalytics-backend@{release}",
             integrations=[
                 FastApiIntegration(),
                 SqlalchemyIntegration(),
             ],
-            traces_sample_rate=0.1,  # 10% so'rovlar uchun performance tracking
-            profiles_sample_rate=0.1,
+            traces_sample_rate=float(os.environ.get("SENTRY_TRACES_RATE", "0.1")),
+            profiles_sample_rate=float(os.environ.get("SENTRY_PROFILES_RATE", "0.1")),
             environment=os.environ.get("APP_ENV", "production"),
             send_default_pii=False,
+            # Don't send DB query content (PII risk)
+            before_send=_scrub_sensitive,
+            attach_stacktrace=True,
+            max_breadcrumbs=50,
         )
-        logger.info("Sentry ulandi")
+        logger.info("Sentry ulandi (release={})", release)
     except ImportError:
         logger.warning("sentry-sdk o'rnatilmagan — pip install sentry-sdk[fastapi]")
 

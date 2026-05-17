@@ -76,6 +76,7 @@ export function AppLayout() {
         { key: '/analytics', icon: <ExperimentOutlined />, label: 'Tahlil' },
         { key: '/ml-insights', icon: <ExperimentOutlined />, label: 'ML Insights' },
         { key: '/ai-tutor', icon: <ExperimentOutlined />, label: 'AI Tutor' },
+        { key: '/advanced-visuals', icon: <ExperimentOutlined />, label: 'Kengaytirilgan vizualizatsiya' },
       ],
     });
   }
@@ -225,6 +226,7 @@ export function AppLayout() {
               suffixIcon={<GlobalOutlined />}
               options={[
                 { value: 'uz', label: '🇺🇿 UZ' },
+                { value: 'qq', label: '🟢 QQ' },
                 { value: 'ru', label: '🇷🇺 RU' },
                 { value: 'en', label: '🇬🇧 EN' },
               ]}

@@ -1,4 +1,8 @@
 """Pytest konfiguratsiyasi va umumiy fixturalar."""
+import os
+
+os.environ["TESTING"] = "1"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -6,6 +10,10 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import OLAPBase, OLTPBase, get_oltp_db, get_olap_db
 from app.main import app
+from app.core.rate_limit import limiter
+
+# Disable rate-limiter in tests to avoid 429 between fixtures
+limiter.enabled = False
 
 TEST_OLTP_URL = "sqlite:///./test_oltp.db"
 TEST_OLAP_URL = "sqlite:///./test_olap.db"
