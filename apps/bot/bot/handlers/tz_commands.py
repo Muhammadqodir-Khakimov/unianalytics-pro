@@ -121,6 +121,73 @@ async def cmd_top(message: Message, token: str | None) -> None:
 
 
 # ---------------------------------------------------------------------------
+# /xavf — risk talabalar (teacher/dean/admin uchun)
+# ---------------------------------------------------------------------------
+@router.message(Command("xavf"))
+async def cmd_xavf(message: Message, token: str | None) -> None:
+    if not token:
+        await message.answer("🔒 Avval tizimga kiring: /login")
+        return
+    try:
+        data = await api_client.my_dashboard(token)
+    except ApiError as e:
+        await message.answer(f"❌ Xato: {e}")
+        return
+    risk = data.get("risk_students") or []
+    role = data.get("role", "")
+    if not risk:
+        await message.answer(
+            "🎉 *Risk guruhida talaba yo'q*\n\n"
+            "Barcha talabalar GPA ≥ 2.0",
+            parse_mode="Markdown",
+        )
+        return
+    lines = [
+        f"⚠️ *Akademik xavfdagi talabalar* \\(GPA \\< 2\\.0\\)",
+        f"Rol: _{md_escape(role)}_  •  Jami: `{len(risk)}`\n",
+    ]
+    for s in risk[:10]:
+        name = md_escape((s.get("full_name") or "—")[:30])
+        sid = md_escape(s.get("student_id") or "")
+        grp = md_escape(s.get("group_name") or "")
+        gpa = s.get("gpa") or 0
+        lines.append(f"⚠️ *{name}*  `{gpa}`\n   _{sid} • {grp}_")
+    await message.answer("\n".join(lines), parse_mode="MarkdownV2")
+
+
+# ---------------------------------------------------------------------------
+# /top_fakultet — eng yaxshi fakultetlar (admin uchun)
+# ---------------------------------------------------------------------------
+@router.message(Command("top_fakultet"))
+async def cmd_top_fakultet(message: Message, token: str | None) -> None:
+    if not token:
+        await message.answer("🔒 Avval tizimga kiring: /login")
+        return
+    try:
+        data = await api_client.my_dashboard(token)
+    except ApiError as e:
+        await message.answer(f"❌ Xato: {e}")
+        return
+    top = data.get("top_faculties") or []
+    if not top:
+        await message.answer(
+            "📊 *Eng yaxshi fakultetlar*\n\n"
+            "_Bu buyruq faqat admin uchun ma'lumot beradi._",
+            parse_mode="Markdown",
+        )
+        return
+    lines = ["🏛 *Eng yaxshi fakultetlar*\n"]
+    medals = ["🥇", "🥈", "🥉", "🎓", "🎓"]
+    for i, f in enumerate(top[:5]):
+        m = medals[i] if i < len(medals) else "•"
+        name = f.get("name") or "—"
+        gpa = f.get("avg_gpa") or 0
+        st = f.get("students") or 0
+        lines.append(f"{m} *{name}*\n   GPA `{gpa}` • `{st}` talaba")
+    await message.answer("\n".join(lines), parse_mode="Markdown")
+
+
+# ---------------------------------------------------------------------------
 # /imtihon — yaqinlashayotgan imtihonlar (yangi)
 # ---------------------------------------------------------------------------
 @router.message(Command("imtihon"))

@@ -115,6 +115,47 @@ class _DashboardContent extends StatelessWidget {
         ),
       ));
     }
+    // Admin/Dean uchun: top fakultetlar va top talabalar
+    final topFaculties = (data.raw['top_faculties'] as List?)
+        ?.whereType<Map>()
+        .map((m) => m.cast<String, dynamic>())
+        .toList() ?? [];
+    if (topFaculties.isNotEmpty) {
+      sections.add(const SizedBox(height: 24));
+      sections.add(_SectionHeader(title: 'Eng yaxshi fakultetlar', icon: Icons.school_outlined));
+      sections.add(const SizedBox(height: 10));
+      sections.add(_TopList(items: topFaculties, primaryKey: 'name', valueKey: 'avg_gpa', subKey: 'students', subLabel: ' talaba'));
+    }
+    final topStudents = (data.raw['top_students'] as List?)
+        ?.whereType<Map>()
+        .map((m) => m.cast<String, dynamic>())
+        .toList() ?? [];
+    if (topStudents.isNotEmpty) {
+      sections.add(const SizedBox(height: 24));
+      sections.add(_SectionHeader(title: 'TOP talabalar', icon: Icons.emoji_events_outlined));
+      sections.add(const SizedBox(height: 10));
+      sections.add(_TopList(items: topStudents, primaryKey: 'name', valueKey: 'gpa', subKey: 'group_name'));
+    }
+    final riskStudents = (data.raw['risk_students'] as List?)
+        ?.whereType<Map>()
+        .map((m) => m.cast<String, dynamic>())
+        .toList() ?? [];
+    if (riskStudents.isNotEmpty) {
+      sections.add(const SizedBox(height: 24));
+      sections.add(_SectionHeader(title: 'Akademik xavfdagi talabalar', icon: Icons.warning_amber_outlined));
+      sections.add(const SizedBox(height: 10));
+      sections.add(_TopList(items: riskStudents, primaryKey: 'full_name', valueKey: 'gpa', subKey: 'group_name', danger: true));
+    }
+    final bySpecialty = (data.raw['by_specialty'] as List?)
+        ?.whereType<Map>()
+        .map((m) => m.cast<String, dynamic>())
+        .toList() ?? [];
+    if (bySpecialty.isNotEmpty) {
+      sections.add(const SizedBox(height: 24));
+      sections.add(_SectionHeader(title: 'Yo‘nalishlar bo‘yicha', icon: Icons.workspaces_outlined));
+      sections.add(const SizedBox(height: 10));
+      sections.add(_TopList(items: bySpecialty, primaryKey: 'specialty', valueKey: 'avg_gpa', subKey: 'students', subLabel: ' talaba'));
+    }
     sections.add(const SizedBox(height: 16));
 
     // Staggered fade-in + slide-up entry animation
@@ -806,5 +847,102 @@ class _ErrorView extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Top list — universal ranked list (top faculties, top students, risk, etc)
+// ---------------------------------------------------------------------------
+class _TopList extends StatelessWidget {
+  final List<Map<String, dynamic>> items;
+  final String primaryKey;
+  final String valueKey;
+  final String? subKey;
+  final String subLabel;
+  final bool danger;
+  const _TopList({
+    required this.items,
+    required this.primaryKey,
+    required this.valueKey,
+    this.subKey,
+    this.subLabel = '',
+    this.danger = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final medals = ['🥇', '🥈', '🥉'];
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
+      elevation: 0,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Column(
+          children: [
+            for (var i = 0; i < items.length && i < 10; i++) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 28,
+                      child: Text(
+                        danger ? '⚠️' : (i < medals.length ? medals[i] : '${i + 1}.'),
+                        style: theme.textTheme.titleSmall,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            items[i][primaryKey]?.toString() ?? '—',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (subKey != null && items[i][subKey] != null)
+                            Text(
+                              '${items[i][subKey]}$subLabel',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: scheme.outline,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      _fmt(items[i][valueKey]),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: danger ? scheme.error : scheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (i < items.length - 1 && i < 9)
+                Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.4)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _fmt(dynamic v) {
+    if (v == null) return '—';
+    if (v is num) return v.toStringAsFixed(2);
+    final d = double.tryParse(v.toString());
+    return d != null ? d.toStringAsFixed(2) : v.toString();
   }
 }

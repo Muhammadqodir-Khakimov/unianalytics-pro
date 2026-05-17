@@ -59,6 +59,8 @@ _DISPATCH = {
     "menu:top":           tz.cmd_top,
     "menu:davomat":       tz.cmd_davomat,
     "menu:imtihon":       tz.cmd_imtihon,
+    "menu:xavf":          tz.cmd_xavf,
+    "menu:top_fakultet":  tz.cmd_top_fakultet,
     "menu:aloqa":         tz.cmd_aloqa,
     "menu:notify_settings": data_handlers.cmd_notify_settings,
 }

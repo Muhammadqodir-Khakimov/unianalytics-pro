@@ -445,6 +445,47 @@ def _teacher_dashboard(user: User, oltp: Session, olap: Session) -> dict:
         .all()
     )
 
+    # Teacher GPA trend
+    trend = olap.execute(
+        text(
+            """
+            SELECT t.academic_year, t.semester,
+                   ROUND(AVG(f.gpa_points), 3) AS gpa,
+                   ROUND(AVG(f.grade_value), 2) AS avg_grade,
+                   COUNT(*) AS grades
+            FROM fact_student_grades f
+            JOIN dim_teacher dt ON f.teacher_key = dt.teacher_key
+            JOIN dim_time t ON f.time_key = t.time_key
+            WHERE dt.teacher_id = :tid
+            GROUP BY t.academic_year, t.semester
+            ORDER BY t.academic_year, t.semester
+            """
+        ),
+        {"tid": teacher.teacher_id},
+    ).mappings().all()
+
+    # Risk talabalar — qaysi o'qituvchining talabalari xavf ostida
+    risk_students = olap.execute(
+        text(
+            """
+            WITH g AS (
+                SELECT ds.full_name, ds.student_id, ds.group_name,
+                       AVG(f.gpa_points) AS gpa
+                FROM fact_student_grades f
+                JOIN dim_student ds ON f.student_key = ds.student_key
+                JOIN dim_teacher dt ON f.teacher_key = dt.teacher_key
+                WHERE dt.teacher_id = :tid
+                GROUP BY ds.full_name, ds.student_id, ds.group_name
+            )
+            SELECT full_name, student_id, group_name, ROUND(gpa::numeric, 2) AS gpa
+            FROM g WHERE gpa < 2.0
+            ORDER BY gpa
+            LIMIT 10
+            """
+        ),
+        {"tid": teacher.teacher_id},
+    ).mappings().all()
+
     return {
         "role": "teacher",
         "linked": True,
@@ -456,6 +497,8 @@ def _teacher_dashboard(user: User, oltp: Session, olap: Session) -> dict:
         },
         "stats": dict(stats),
         "by_subject": [dict(r) for r in by_subject],
+        "gpa_trend": [dict(r) for r in trend],
+        "risk_students": [dict(r) for r in risk_students],
         "recent_grades": [
             {
                 "id": g.id,
@@ -530,6 +573,67 @@ def _dean_dashboard(user: User, oltp: Session, olap: Session) -> dict:
         {"fname": faculty.name},
     ).mappings().all()
 
+    # Dean uchun GPA trend
+    trend = olap.execute(
+        text(
+            """
+            SELECT t.academic_year, t.semester,
+                   ROUND(AVG(f.gpa_points), 3) AS gpa,
+                   ROUND(AVG(f.grade_value), 2) AS avg_grade,
+                   COUNT(*) AS grades
+            FROM fact_student_grades f
+            JOIN dim_faculty fac ON f.faculty_key = fac.faculty_key
+            JOIN dim_time t ON f.time_key = t.time_key
+            WHERE fac.faculty_name = :fname
+            GROUP BY t.academic_year, t.semester
+            ORDER BY t.academic_year, t.semester
+            """
+        ),
+        {"fname": faculty.name},
+    ).mappings().all()
+
+    # Fakultet TOP talabalari
+    top_students = olap.execute(
+        text(
+            """
+            SELECT ds.full_name AS name,
+                   ds.group_name AS group_name,
+                   ROUND(AVG(f.gpa_points), 3) AS gpa,
+                   ROUND(AVG(f.grade_value), 2) AS avg_grade
+            FROM fact_student_grades f
+            JOIN dim_student ds ON f.student_key = ds.student_key
+            JOIN dim_faculty fac ON f.faculty_key = fac.faculty_key
+            WHERE fac.faculty_name = :fname
+            GROUP BY ds.full_name, ds.group_name
+            ORDER BY gpa DESC
+            LIMIT 10
+            """
+        ),
+        {"fname": faculty.name},
+    ).mappings().all()
+
+    # Risk talabalar
+    risk_students = olap.execute(
+        text(
+            """
+            WITH g AS (
+                SELECT ds.full_name, ds.student_id, ds.group_name,
+                       AVG(f.gpa_points) AS gpa
+                FROM fact_student_grades f
+                JOIN dim_student ds ON f.student_key = ds.student_key
+                JOIN dim_faculty fac ON f.faculty_key = fac.faculty_key
+                WHERE fac.faculty_name = :fname
+                GROUP BY ds.full_name, ds.student_id, ds.group_name
+            )
+            SELECT full_name, student_id, group_name, ROUND(gpa::numeric, 2) AS gpa
+            FROM g WHERE gpa < 2.0
+            ORDER BY gpa
+            LIMIT 10
+            """
+        ),
+        {"fname": faculty.name},
+    ).mappings().all()
+
     return {
         "role": "dean",
         "linked": True,
@@ -537,6 +641,9 @@ def _dean_dashboard(user: User, oltp: Session, olap: Session) -> dict:
         "stats": dict(stats),
         "by_specialty": [dict(r) for r in by_specialty],
         "by_course": [dict(r) for r in by_course],
+        "gpa_trend": [dict(r) for r in trend],
+        "top_students": [dict(r) for r in top_students],
+        "risk_students": [dict(r) for r in risk_students],
     }
 
 
@@ -549,9 +656,85 @@ def _admin_dashboard(olap: Session) -> dict:
                    COUNT(DISTINCT subject_key) AS total_subjects,
                    COUNT(DISTINCT teacher_key) AS total_teachers,
                    ROUND(AVG(grade_value), 2) AS avg_grade,
-                   ROUND(AVG(gpa_points), 3) AS avg_gpa
+                   ROUND(AVG(gpa_points), 3) AS avg_gpa,
+                   ROUND(AVG(attendance_percentage), 2) AS avg_attendance,
+                   ROUND(SUM(CASE WHEN is_passed THEN 1 ELSE 0 END) * 100.0
+                         / NULLIF(COUNT(*), 0), 2) AS passing_rate,
+                   COUNT(DISTINCT faculty_key) AS total_faculties
             FROM fact_student_grades
             """
         )
     ).mappings().first() or {}
-    return {"role": "admin", "linked": True, "stats": dict(stats)}
+
+    # Top 5 fakultetlar
+    top_faculties = olap.execute(
+        text(
+            """
+            SELECT fac.faculty_name AS name,
+                   COUNT(DISTINCT f.student_key) AS students,
+                   ROUND(AVG(f.gpa_points), 3) AS avg_gpa
+            FROM fact_student_grades f
+            JOIN dim_faculty fac ON f.faculty_key = fac.faculty_key
+            GROUP BY fac.faculty_name
+            ORDER BY avg_gpa DESC
+            LIMIT 5
+            """
+        )
+    ).mappings().all()
+
+    # Top 10 talabalar
+    top_students = olap.execute(
+        text(
+            """
+            SELECT ds.full_name AS name,
+                   ds.group_name AS group_name,
+                   ROUND(AVG(f.gpa_points), 3) AS gpa,
+                   ROUND(AVG(f.grade_value), 2) AS avg_grade
+            FROM fact_student_grades f
+            JOIN dim_student ds ON f.student_key = ds.student_key
+            GROUP BY ds.full_name, ds.group_name
+            ORDER BY gpa DESC
+            LIMIT 10
+            """
+        )
+    ).mappings().all()
+
+    # Risk talabalar — GPA < 2.0
+    risk_count = olap.execute(
+        text(
+            """
+            WITH g AS (
+                SELECT ds.student_id, AVG(f.gpa_points) AS gpa
+                FROM fact_student_grades f
+                JOIN dim_student ds ON f.student_key = ds.student_key
+                GROUP BY ds.student_id
+            )
+            SELECT COUNT(*) AS cnt FROM g WHERE gpa < 2.0
+            """
+        )
+    ).mappings().first() or {}
+
+    # GPA dinamikasi semestrlar bo'yicha
+    trend = olap.execute(
+        text(
+            """
+            SELECT t.academic_year, t.semester,
+                   ROUND(AVG(f.gpa_points), 3) AS gpa,
+                   ROUND(AVG(f.grade_value), 2) AS avg_grade,
+                   COUNT(*) AS grades
+            FROM fact_student_grades f
+            JOIN dim_time t ON f.time_key = t.time_key
+            GROUP BY t.academic_year, t.semester
+            ORDER BY t.academic_year, t.semester
+            """
+        )
+    ).mappings().all()
+
+    return {
+        "role": "admin",
+        "linked": True,
+        "stats": {**dict(stats), "risk_students": risk_count.get("cnt", 0)},
+        "top_faculties": [dict(r) for r in top_faculties],
+        "top_students": [dict(r) for r in top_students],
+        "gpa_trend": [dict(r) for r in trend],
+    }

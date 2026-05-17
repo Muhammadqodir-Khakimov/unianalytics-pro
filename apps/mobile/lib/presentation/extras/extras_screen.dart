@@ -13,11 +13,61 @@ class ExtrasScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final dashAsync = ref.watch(myDashboardProvider);
+    final role = dashAsync.maybeWhen(data: (d) => d.role, orElse: () => 'student');
+
+    final sections = <Widget>[];
+
+    if (role == 'student') {
+      sections.addAll([
+        _Section(icon: Icons.school_outlined, title: 'Fakultet ichida o\'rningiz', child: const _FacultyRank(), theme: theme),
+        _Section(icon: Icons.emoji_events_outlined, title: 'TOP klassmatlar', child: const _TopClassmates(), theme: theme),
+        _Section(icon: Icons.event_available_outlined, title: 'Davomat', child: const _Attendance(), theme: theme),
+        _Section(icon: Icons.menu_book_outlined, title: 'Yaqinlashayotgan imtihonlar', child: const _UpcomingExams(), theme: theme),
+      ]);
+    } else {
+      // teacher / dean / admin — boshqa kesim
+      sections.add(_Section(
+        icon: Icons.bar_chart_outlined,
+        title: 'Sizning sohangiz statistikasi',
+        child: _RoleStats(role: role),
+        theme: theme,
+      ));
+      sections.add(_Section(
+        icon: Icons.emoji_events_outlined,
+        title: role == 'admin' ? 'Universitet TOP-10' : 'Sohangizdagi TOP-10',
+        child: const _RoleTopStudents(),
+        theme: theme,
+      ));
+      sections.add(_Section(
+        icon: Icons.warning_amber_outlined,
+        title: 'Akademik xavfdagi talabalar',
+        child: const _RoleRiskStudents(),
+        theme: theme,
+      ));
+      if (role == 'admin') {
+        sections.add(_Section(
+          icon: Icons.school_outlined,
+          title: 'Eng yaxshi fakultetlar',
+          child: const _AdminTopFaculties(),
+          theme: theme,
+        ));
+      }
+    }
+
+    // Aloqa va sozlamalar — barcha rollar uchun
+    sections.add(_Section(
+      icon: Icons.contacts_outlined,
+      title: 'Aloqa',
+      child: const _Contacts(),
+      theme: theme,
+    ));
 
     return Scaffold(
       appBar: AppBar(title: const Text('Qo\'shimcha')),
       body: RefreshIndicator(
         onRefresh: () async {
+          ref.invalidate(myDashboardProvider);
           ref.invalidate(facultyRankProvider);
           ref.invalidate(topClassmatesProvider);
           ref.invalidate(attendanceProvider);
@@ -26,40 +76,213 @@ class ExtrasScreen extends ConsumerWidget {
         },
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          children: [
-            _Section(
-              icon: Icons.school_outlined,
-              title: 'Fakultet ichida o\'rningiz',
-              child: const _FacultyRank(),
-              theme: theme,
-            ),
-            _Section(
-              icon: Icons.emoji_events_outlined,
-              title: 'TOP klassmatlar',
-              child: const _TopClassmates(),
-              theme: theme,
-            ),
-            _Section(
-              icon: Icons.event_available_outlined,
-              title: 'Davomat',
-              child: const _Attendance(),
-              theme: theme,
-            ),
-            _Section(
-              icon: Icons.menu_book_outlined,
-              title: 'Yaqinlashayotgan imtihonlar',
-              child: const _UpcomingExams(),
-              theme: theme,
-            ),
-            _Section(
-              icon: Icons.contacts_outlined,
-              title: 'Aloqa',
-              child: const _Contacts(),
-              theme: theme,
-            ),
-          ],
+          children: sections,
         ),
       ),
+    );
+  }
+}
+
+// ----------- Role-aware widgets (admin/teacher/dekan) -----------
+class _RoleStats extends ConsumerWidget {
+  final String role;
+  const _RoleStats({required this.role});
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(myDashboardProvider);
+    final theme = Theme.of(context);
+    return async.when(
+      loading: () => const LinearProgressIndicator(minHeight: 2),
+      error: (e, _) => Text('Xato: $e'),
+      data: (d) {
+        final stats = (d.raw['stats'] as Map?)?.cast<String, dynamic>() ?? {};
+        Widget chip(String label, dynamic value) => Chip(
+          label: Text('$label: ${_fmt(value)}'),
+          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+        );
+        final chips = <Widget>[];
+        if (role == 'admin') {
+          chips.addAll([
+            chip('Talabalar', stats['total_students']),
+            chip('O\'qituvchilar', stats['total_teachers']),
+            chip('Fakultetlar', stats['total_faculties']),
+            chip('Fanlar', stats['total_subjects']),
+            chip('Baholar', stats['total_grades']),
+            chip('Davomat %', stats['avg_attendance']),
+            chip('O\'tish foizi', stats['passing_rate']),
+            chip('Risk talaba', stats['risk_students']),
+          ]);
+        } else if (role == 'dean' || role == 'dekan') {
+          chips.addAll([
+            chip('Talabalar', stats['total_students']),
+            chip('O\'qituvchilar', stats['total_teachers']),
+            chip('Fanlar', stats['total_subjects']),
+            chip('Davomat %', stats['avg_attendance']),
+            chip('O\'tish foizi', stats['passing_rate']),
+            chip('O\'rt. GPA', stats['avg_gpa']),
+          ]);
+        } else {
+          // teacher
+          chips.addAll([
+            chip('Qo\'yilgan baho', stats['grades_given']),
+            chip('Talabalar', stats['students_taught']),
+            chip('Fanlar', stats['subjects_taught']),
+            chip('O\'rt. baho', stats['avg_grade']),
+            chip('O\'rt. GPA', stats['avg_gpa']),
+          ]);
+        }
+        return Wrap(spacing: 6, runSpacing: 6, children: chips);
+      },
+    );
+  }
+}
+
+String _fmt(dynamic v) {
+  if (v == null) return '—';
+  if (v is num) return v.toStringAsFixed(v is int ? 0 : 2);
+  final d = double.tryParse(v.toString());
+  return d != null ? d.toStringAsFixed(2) : v.toString();
+}
+
+class _RoleTopStudents extends ConsumerWidget {
+  const _RoleTopStudents();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(myDashboardProvider);
+    final theme = Theme.of(context);
+    return async.when(
+      loading: () => const LinearProgressIndicator(minHeight: 2),
+      error: (e, _) => Text('Xato: $e'),
+      data: (d) {
+        final items = (d.raw['top_students'] as List?)
+            ?.whereType<Map>()
+            .map((m) => m.cast<String, dynamic>())
+            .toList() ?? [];
+        if (items.isEmpty) {
+          return Text('Ma\'lumot tayyorlanmoqda.', style: theme.textTheme.bodyMedium);
+        }
+        final medals = ['🥇', '🥈', '🥉'];
+        return Column(
+          children: [
+            for (var i = 0; i < items.length && i < 10; i++)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(children: [
+                  SizedBox(
+                    width: 32,
+                    child: Text(i < medals.length ? medals[i] : '${i + 1}.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(items[i]['name'] ?? '—', style: theme.textTheme.bodyMedium),
+                        if (items[i]['group_name'] != null)
+                          Text(items[i]['group_name'],
+                            style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.outline)),
+                      ],
+                    ),
+                  ),
+                  Text(_fmt(items[i]['gpa']),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.primary,
+                    )),
+                ]),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _RoleRiskStudents extends ConsumerWidget {
+  const _RoleRiskStudents();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(myDashboardProvider);
+    final theme = Theme.of(context);
+    return async.when(
+      loading: () => const LinearProgressIndicator(minHeight: 2),
+      error: (e, _) => Text('Xato: $e'),
+      data: (d) {
+        final items = (d.raw['risk_students'] as List?)
+            ?.whereType<Map>()
+            .map((m) => m.cast<String, dynamic>())
+            .toList() ?? [];
+        if (items.isEmpty) {
+          return Text('🎉 Risk guruhida talaba yo\'q.',
+            style: theme.textTheme.bodyMedium?.copyWith(color: Colors.green));
+        }
+        return Column(
+          children: [
+            for (final s in items.take(10))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(children: [
+                  const Text('⚠️ ', style: TextStyle(fontSize: 16)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(s['full_name'] ?? '—',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          )),
+                        Text('${s['group_name'] ?? ''}  •  ${s['student_id'] ?? ''}',
+                          style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.outline)),
+                      ],
+                    ),
+                  ),
+                  Text('GPA ${_fmt(s['gpa'])}',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.w700,
+                    )),
+                ]),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AdminTopFaculties extends ConsumerWidget {
+  const _AdminTopFaculties();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(myDashboardProvider);
+    final theme = Theme.of(context);
+    return async.when(
+      loading: () => const LinearProgressIndicator(minHeight: 2),
+      error: (e, _) => Text('Xato: $e'),
+      data: (d) {
+        final items = (d.raw['top_faculties'] as List?)
+            ?.whereType<Map>()
+            .map((m) => m.cast<String, dynamic>())
+            .toList() ?? [];
+        if (items.isEmpty) {
+          return Text('Ma\'lumot tayyorlanmoqda.', style: theme.textTheme.bodyMedium);
+        }
+        return Column(children: [
+          for (final f in items)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.account_balance_outlined),
+              title: Text(f['name'] ?? '—'),
+              subtitle: Text('${f['students']} talaba'),
+              trailing: Text('GPA ${_fmt(f['avg_gpa'])}',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.colorScheme.primary,
+                )),
+            ),
+        ]);
+      },
     );
   }
 }
