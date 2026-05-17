@@ -69,4 +69,31 @@ class MyRemoteDataSource {
     final res = await _dio.patch('/users/me/preferences', data: patch);
     return (res.data as Map).cast<String, dynamic>();
   }
+
+  // ---- Teacher / Dean / Admin: students list ----
+  Future<List<Map<String, dynamic>>> students({int limit = 50}) async {
+    final res = await _dio.get('/my/students', queryParameters: {'limit': limit});
+    final data = (res.data as Map).cast<String, dynamic>();
+    return (data['items'] as List? ?? [])
+        .whereType<Map>()
+        .map((m) => m.cast<String, dynamic>())
+        .toList();
+  }
+
+  // ---- Student: parent link ----
+  Future<Map<String, dynamic>> requestParentLink(String hemisId, {String? note}) async {
+    final res = await _dio.post('/bot/link-parent', data: {
+      'talaba_hemis_id': hemisId,
+      if (note != null) 'note': note,
+    });
+    return (res.data as Map).cast<String, dynamic>();
+  }
+
+  Future<List<Map<String, dynamic>>> parentLinks() async {
+    final res = await _dio.get('/bot/parent-links');
+    return (res.data as List? ?? [])
+        .whereType<Map>()
+        .map((m) => m.cast<String, dynamic>())
+        .toList();
+  }
 }

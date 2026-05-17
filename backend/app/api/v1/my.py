@@ -152,6 +152,84 @@ def my_attendance_summary(
     }
 
 
+@router.get("/students")
+def my_students(
+    limit: int = 50,
+    user: User = Depends(get_current_user),
+    oltp: Session = Depends(get_oltp_db),
+    olap: Session = Depends(get_olap_db),
+) -> dict[str, Any]:
+    """O'qituvchi/dekan/admin uchun talabalar ro'yxati (rolga qarab kesim)."""
+    if user.role == UserRole.STUDENT:
+        return {"items": [], "message": "Bu sahifa o'qituvchilar uchun"}
+
+    if user.role == UserRole.TEACHER:
+        teacher = _link_teacher(user, oltp)
+        if not teacher:
+            return {"items": []}
+        rows = olap.execute(
+            text(
+                """
+                SELECT ds.student_id, ds.full_name, ds.group_name,
+                       ROUND(AVG(f.grade_value)::numeric, 2) AS avg_grade,
+                       ROUND(AVG(f.gpa_points)::numeric, 3) AS avg_gpa,
+                       ROUND(AVG(f.attendance_percentage)::numeric, 2) AS att,
+                       COUNT(*) AS grades
+                FROM fact_student_grades f
+                JOIN dim_student ds ON f.student_key = ds.student_key
+                JOIN dim_teacher dt ON f.teacher_key = dt.teacher_key
+                WHERE dt.teacher_id = :tid
+                GROUP BY ds.student_id, ds.full_name, ds.group_name
+                ORDER BY avg_gpa DESC
+                LIMIT :lim
+                """
+            ),
+            {"tid": teacher.teacher_id, "lim": limit},
+        ).mappings().all()
+    else:
+        # dean / admin — fakultet yoki universitet kesimi
+        faculty_filter = ""
+        params = {"lim": limit}
+        if user.role == UserRole.DEKAN:
+            faculty = oltp.query(Faculty).first()
+            if faculty:
+                faculty_filter = "JOIN dim_faculty fac ON f.faculty_key = fac.faculty_key WHERE fac.faculty_name = :fname"
+                params["fname"] = faculty.name
+        rows = olap.execute(
+            text(
+                f"""
+                SELECT ds.student_id, ds.full_name, ds.group_name,
+                       ROUND(AVG(f.grade_value)::numeric, 2) AS avg_grade,
+                       ROUND(AVG(f.gpa_points)::numeric, 3) AS avg_gpa,
+                       ROUND(AVG(f.attendance_percentage)::numeric, 2) AS att,
+                       COUNT(*) AS grades
+                FROM fact_student_grades f
+                JOIN dim_student ds ON f.student_key = ds.student_key
+                {faculty_filter}
+                GROUP BY ds.student_id, ds.full_name, ds.group_name
+                ORDER BY avg_gpa DESC
+                LIMIT :lim
+                """
+            ),
+            params,
+        ).mappings().all()
+
+    items = [
+        {
+            "student_id": r["student_id"],
+            "full_name": r["full_name"],
+            "group_name": r["group_name"],
+            "avg_grade": float(r["avg_grade"]) if r["avg_grade"] is not None else None,
+            "avg_gpa": float(r["avg_gpa"]) if r["avg_gpa"] is not None else None,
+            "attendance": float(r["att"]) if r["att"] is not None else None,
+            "grades_count": r["grades"],
+            "is_risk": (r["avg_gpa"] is not None and float(r["avg_gpa"]) < 2.0),
+        }
+        for r in rows
+    ]
+    return {"items": items, "count": len(items), "role": user.role.value}
+
+
 @router.get("/top-classmates")
 def my_top_classmates(
     limit: int = 5,

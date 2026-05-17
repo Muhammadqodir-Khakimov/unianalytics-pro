@@ -13,8 +13,10 @@ import '../presentation/notifications/notifications_screen.dart';
 import '../presentation/profile/profile_screen.dart';
 import '../presentation/schedule/schedule_screen.dart';
 import '../presentation/settings/settings_screen.dart';
+import '../presentation/student/parent_link_screen.dart';
 import '../presentation/teacher/grade_entry_screen.dart';
 import '../presentation/teacher/my_groups_screen.dart';
+import '../presentation/teacher/my_students_screen.dart';
 import '../presentation/teacher/my_subjects_screen.dart';
 import '../presentation/widgets/app_shell.dart';
 import '../providers/auth_provider.dart';
@@ -108,6 +110,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/teacher/grade-entry',
         pageBuilder: (_, state) => _slidePage(const GradeEntryScreen(), state),
+      ),
+      GoRoute(
+        path: '/teacher/students',
+        pageBuilder: (_, state) => _slidePage(const MyStudentsScreen(), state),
+      ),
+      GoRoute(
+        path: '/parent-link',
+        pageBuilder: (_, state) => _slidePage(const ParentLinkScreen(), state),
       ),
 
       StatefulShellRoute.indexedStack(

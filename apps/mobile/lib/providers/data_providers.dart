@@ -71,6 +71,18 @@ final contactsProvider =
   return data;
 });
 
+/// Teacher/Dean/Admin: talabalar ro'yxati
+final myStudentsProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  return ref.watch(myRemoteDataSourceProvider).students();
+});
+
+/// Student: faol parent link so'rovlari
+final parentLinksProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  return ref.watch(myRemoteDataSourceProvider).parentLinks();
+});
+
 /// Bildirishnoma/digest sozlamalari
 final preferencesProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
