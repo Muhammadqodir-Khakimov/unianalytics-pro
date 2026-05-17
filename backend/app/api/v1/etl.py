@@ -1,7 +1,10 @@
 """ETL boshqaruv endpointlari."""
+import traceback
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.dependencies import require_admin
+from app.services.etl_service import run_full_etl as run_full_etl_sync
 from app.tasks.etl_tasks import run_full_etl
 
 router = APIRouter(prefix="/etl", tags=["ETL"], dependencies=[Depends(require_admin)])
@@ -12,6 +15,19 @@ def run_etl():
     """OLTP -> OLAP to'liq ETL ni Celery orqali ishga tushirish."""
     task = run_full_etl.delay()
     return {"task_id": task.id, "status": "queued"}
+
+
+@router.post("/run-sync")
+def run_etl_sync():
+    """ETL ni sinxron tarzda ishga tushirish (Celery worker bo'lmaganda).
+
+    Diqqat: 5000+ talaba uchun 30-60 sekund davom etishi mumkin —
+    HTTP timeout'ni hisobga oling. Yakuniy hisobotni qaytaradi.
+    """
+    try:
+        return {"status": "ok", "result": run_full_etl_sync()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{e}\n{traceback.format_exc()[-500:]}")
 
 
 @router.get("/status/{task_id}")
