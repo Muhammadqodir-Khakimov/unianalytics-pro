@@ -135,6 +135,21 @@ class Settings(BaseSettings):
             return ["*"]
         return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
+    @property
+    def cors_origin_regex(self) -> str | None:
+        """Vercel/Railway preview deploy'lar uchun wildcard regex.
+
+        CORS_ORIGIN_REGEX env'iga to'g'ridan-to'g'ri regex berish mumkin,
+        bo'lmasa default: *.vercel.app va *.up.railway.app preview URL'lariga
+        ruxsat (production exact match `cors_origins_list` orqali boradi).
+        """
+        explicit = os.environ.get("CORS_ORIGIN_REGEX", "").strip()
+        if explicit:
+            return explicit
+        if "*" in self.cors_origins_list:
+            return None
+        return r"https://([a-z0-9-]+\.)?(vercel\.app|up\.railway\.app)"
+
 
 @lru_cache
 def get_settings() -> Settings:

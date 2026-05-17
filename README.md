@@ -26,7 +26,7 @@ Tizim **OLAP (Online Analytical Processing)** modeliga asoslangan bo'lib, talaba
 | **Backend API** | Python 3.11 + FastAPI | OLAP, ETL, ML, REST API |
 | **OLAP DWH** | PostgreSQL 15+, Star Schema | 1 fakt + **7 dimension** + materialized views |
 | **OLTP** | PostgreSQL 15+ | Tranzaksion ma'lumotlar |
-| **Web ilova** | React 18 + TypeScript + Vite + Ant Design | Rahbariyat / analitika markazi |
+| **Web ilova** | React 18 + TypeScript + Vite + Ant Design (Vercel) | Rahbariyat / analitika markazi |
 | **Mobil ilova** | Flutter 3.16+ (Dart 3) | Talaba va o'qituvchi shaxsiy kabineti |
 | **Telegram bot** | Python aiogram 3 | Tezkor kirish, ota-ona kanali |
 | **ETL** | Celery + Redis | HEMIS → DWH avtomatik sinxronizatsiya |
@@ -245,7 +245,9 @@ cd apps/bot && pytest
 - [Arxitektura](./docs/ARCHITECTURE.md)
 - [API hujjati](./docs/API.md)
 - [OLAP modeli](./docs/OLAP_MODEL.md)
-- [Deploy yo'riqnomasi](./docs/DEPLOYMENT.md)
+- [Deploy — Vercel (frontend)](./docs/VERCEL.md)
+- [Deploy — Railway (backend + bot + DB)](./docs/RAILWAY.md)
+- [Umumiy deploy yo'riqnomasi](./docs/DEPLOYMENT.md)
 - [Xavfsizlik](./docs/SECURITY.md)
 - [Foydalanish qulayligi (A11Y)](./docs/A11Y.md)
 - [Demo ssenariy](./docs/DEMO_SCRIPT.md)
