@@ -42,9 +42,18 @@ def _link_student(user: User, oltp: Session) -> Student | None:
     """User ni Student bilan bog'lash — username asosida (yoki email)."""
     if user.role != UserRole.STUDENT:
         return None
-    # Username "student" default test user — birinchi talabani qaytarish
+    # Username "student" — demo akkaunt. Birinchi baholar bo'lgan talabani
+    # qaytaramiz (Aks holda dashboard bo'sh ko'rinadi, chunki seed har bir
+    # talabaga emas, tasodifiy tanlanganlariga baho beradi).
     if user.username == "student":
-        return oltp.query(Student).first()
+        s = (
+            oltp.query(Student)
+            .join(Grade, Grade.student_id == Student.id)
+            .group_by(Student.id)
+            .order_by(Student.id)
+            .first()
+        )
+        return s or oltp.query(Student).first()
     # Aks holda email yoki user_id orqali
     return (
         oltp.query(Student)
