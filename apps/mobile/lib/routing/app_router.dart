@@ -7,12 +7,12 @@ import '../presentation/auth/login_screen.dart';
 import '../presentation/auth/register_screen.dart';
 import '../presentation/auth/splash_screen.dart';
 import '../presentation/dashboard/dashboard_screen.dart';
+import '../presentation/extras/extras_screen.dart';
 import '../presentation/grades/grades_screen.dart';
 import '../presentation/notifications/notifications_screen.dart';
 import '../presentation/profile/profile_screen.dart';
 import '../presentation/schedule/schedule_screen.dart';
 import '../presentation/settings/settings_screen.dart';
-import '../presentation/subjects/subjects_screen.dart';
 import '../presentation/teacher/grade_entry_screen.dart';
 import '../presentation/teacher/my_groups_screen.dart';
 import '../presentation/teacher/my_subjects_screen.dart';
@@ -125,9 +125,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               label: 'Baholar',
             ),
             ShellTab(
-              icon: Icons.menu_book_outlined,
-              selectedIcon: Icons.menu_book,
-              label: 'Fanlar',
+              icon: Icons.dashboard_customize_outlined,
+              selectedIcon: Icons.dashboard_customize,
+              label: 'Qo\'shimcha',
             ),
             ShellTab(
               icon: Icons.calendar_today_outlined,
@@ -156,8 +156,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
-              path: '/subjects',
-              builder: (_, _) => const SubjectsScreen(),
+              path: '/extras',
+              builder: (_, _) => const ExtrasScreen(),
             ),
           ]),
           StatefulShellBranch(routes: [

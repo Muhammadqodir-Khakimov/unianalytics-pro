@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/datasources/my_remote_datasource.dart';
 import '../../domain/entities/user.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/data_providers.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/biometric_service.dart';
 
@@ -122,6 +124,9 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           const Divider(),
+          const _SectionHeader('Bildirishnomalar'),
+          const _PreferencesPanel(),
+          const Divider(),
           const _SectionHeader('Xavfsizlik'),
           SwitchListTile(
             secondary: const Icon(Icons.fingerprint),
@@ -151,6 +156,58 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 }
+
+class _PreferencesPanel extends ConsumerWidget {
+  const _PreferencesPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(preferencesProvider);
+    return async.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(16),
+        child: LinearProgressIndicator(minHeight: 2),
+      ),
+      error: (e, _) => ListTile(
+        leading: const Icon(Icons.error_outline),
+        title: const Text('Yuklab bo\'lmadi'),
+        subtitle: Text('$e'),
+        trailing: TextButton(
+          onPressed: () => ref.invalidate(preferencesProvider),
+          child: const Text('Qayta urinish'),
+        ),
+      ),
+      data: (prefs) {
+        Future<void> patch(String key, bool value) async {
+          await ref.read(myRemoteDataSourceProvider).updatePreferences({key: value});
+          ref.invalidate(preferencesProvider);
+        }
+        return Column(children: [
+          SwitchListTile(
+            secondary: const Icon(Icons.school_outlined),
+            title: const Text('Yangi baho qo\'yilganda'),
+            value: prefs['notify_new_grade'] == true,
+            onChanged: (v) => patch('notify_new_grade', v),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.warning_amber_outlined),
+            title: const Text('Akademik xavf signali'),
+            value: prefs['notify_academic_risk'] == true,
+            onChanged: (v) => patch('notify_academic_risk', v),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.event_note_outlined),
+            title: const Text('Haftalik dayjest'),
+            subtitle: const Text('Har juma 18:00 da hisobot'),
+            value: prefs['weekly_digest_enabled'] == true,
+            onChanged: (v) => patch('weekly_digest_enabled', v),
+          ),
+        ]);
+      },
+    );
+  }
+}
+
 
 String _roleLabel(UserRole role) {
   switch (role) {

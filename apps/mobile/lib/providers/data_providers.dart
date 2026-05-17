@@ -34,6 +34,49 @@ final myDashboardProvider =
   }
 });
 
+/// Fakultet bo'yicha o'rin (TZ: /my/rank/faculty)
+final facultyRankProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+  return ref.watch(myRemoteDataSourceProvider).facultyRank();
+});
+
+/// Davomat (fan kesimida)
+final attendanceProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+  return ref.watch(myRemoteDataSourceProvider).attendance();
+});
+
+/// Guruh ichida TOP klassmatlar
+final topClassmatesProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  return ref.watch(myRemoteDataSourceProvider).topClassmates();
+});
+
+/// Yaqinlashayotgan imtihonlar
+final upcomingExamsProvider =
+    FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
+  return ref.watch(myRemoteDataSourceProvider).upcomingExams();
+});
+
+/// Kurator/Dekan/Mudir kontaktlari (demo fallback bilan)
+final contactsProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+  final data = await ref.watch(myRemoteDataSourceProvider).contacts();
+  Map<String, dynamic> demo(String name, String phone, String email, String role) => {
+        'fish': name, 'phone': phone, 'email': email, 'role': role,
+      };
+  data['kurator'] ??= demo('Karimova Dilshoda Nuriddinovna', '+998 71 200-12-34', 'kurator@univ.uz', 'kurator');
+  data['kafedra_mudiri'] ??= demo('Sharipov Akram Rasulovich', '+998 71 200-33-33', 'head@univ.uz', 'kafedra_mudiri');
+  data['dekan'] ??= demo('Tursunov Bobur Olimovich', '+998 71 200-22-22', 'dean@univ.uz', 'dekan');
+  return data;
+});
+
+/// Bildirishnoma/digest sozlamalari
+final preferencesProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+  return ref.watch(myRemoteDataSourceProvider).preferences();
+});
+
 /// Baholar — birinchi sahifa (paginatsiya keyingi bosqichda).
 final myGradesProvider =
     FutureProvider.autoDispose<Paginated<Grade>>((ref) async {
