@@ -21,8 +21,21 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Standart maydon: OLTP. Buni "--name oltp" yoki "--name olap" bilan boshqarish mumkin.
-TARGET = config.get_main_option("target", "oltp")
+# TARGET-ni tanlash tartibi (yuqori → past prioritet):
+#   1) -x target=olap          (CLI x-argument)
+#   2) [alembic] target = ...  (alembic.ini main option)
+#   3) "oltp"                  (default)
+_x_args = context.get_x_argument(as_dictionary=True)
+TARGET = (
+    _x_args.get("target")
+    or config.get_main_option("target")
+    or "oltp"
+).lower()
+
+if TARGET not in {"oltp", "olap"}:
+    raise ValueError(
+        f"Noma'lum target='{TARGET}'. Faqat 'oltp' yoki 'olap' qabul qilinadi."
+    )
 
 
 def get_url() -> str:
@@ -33,6 +46,26 @@ def get_metadata():
     return OLTPBase.metadata if TARGET == "oltp" else OLAPBase.metadata
 
 
+def include_object(object, name, type_, reflected, compare_to):
+    """Bir target migratsiyasi boshqa target jadvallariga tegmasligi uchun filtr.
+
+    OLTP va OLAP modellari `app.models` orqali bitta Python jarayonida
+    yuklanadi (FK importlar uchun zarur). Lekin har bir baza faqat o'z
+    metadata.tables ni yaratishi kerak — aks holda alembic OLTP DB da
+    OLAP jadvallarini ham yaratishga urinadi.
+    """
+    if type_ == "table":
+        return name in get_metadata().tables
+    return True
+
+
+# Eslatma: multi-head loyiha bo'lgani uchun upgrade buyrug'ini doim
+# `<branch>@head` bilan yozish kerak — masalan:
+#   alembic -x target=oltp upgrade oltp@head
+#   alembic -x target=olap upgrade olap@head
+# Yoki Makefile orqali (`make migrate-oltp`, `make migrate-olap`).
+
+
 def run_migrations_offline() -> None:
     context.configure(
         url=get_url(),
@@ -40,6 +73,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()
@@ -60,6 +94,7 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=get_metadata(),
             compare_type=True,
+            include_object=include_object,
         )
         with context.begin_transaction():
             context.run_migrations()

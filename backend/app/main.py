@@ -37,6 +37,7 @@ from app.api.v1 import (
     subjects as subjects_router,
     teachers as teachers_router,
     telegram as telegram_router,
+    bot_endpoints as bot_endpoints_router,
     permissions as permissions_router,
     tenants as tenants_router,
     transcript as transcript_router,
@@ -127,6 +128,7 @@ app.include_router(etl_router.router, prefix=API_V1_PREFIX)
 app.include_router(audit_router.router, prefix=API_V1_PREFIX)
 app.include_router(cache_router.router, prefix=API_V1_PREFIX)
 app.include_router(telegram_router.router, prefix=API_V1_PREFIX)
+app.include_router(bot_endpoints_router.router, prefix=API_V1_PREFIX)
 app.include_router(tenants_router.router, prefix=API_V1_PREFIX)
 app.include_router(permissions_router.router, prefix=API_V1_PREFIX)
 app.include_router(webhooks_router.router, prefix=API_V1_PREFIX)

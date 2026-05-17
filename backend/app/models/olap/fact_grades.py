@@ -20,7 +20,11 @@ class FactStudentGrade(OLAPBase):
         Index("ix_fact_subject_key", "subject_key"),
         Index("ix_fact_time_key", "time_key"),
         Index("ix_fact_faculty_key", "faculty_key"),
+        Index("ix_fact_kafedra_key", "kafedra_key"),
+        Index("ix_fact_group_key", "group_key"),
         Index("ix_fact_faculty_time", "faculty_key", "time_key"),
+        Index("ix_fact_kafedra_time", "kafedra_key", "time_key"),
+        Index("ix_fact_group_time", "group_key", "time_key"),
         Index("ix_fact_student_time", "student_key", "time_key"),
     )
 
@@ -32,6 +36,8 @@ class FactStudentGrade(OLAPBase):
     teacher_key: Mapped[int] = mapped_column(ForeignKey("dim_teacher.teacher_key"), nullable=False)
     time_key: Mapped[int] = mapped_column(ForeignKey("dim_time.time_key"), nullable=False)
     faculty_key: Mapped[int] = mapped_column(ForeignKey("dim_faculty.faculty_key"), nullable=False)
+    kafedra_key: Mapped[int | None] = mapped_column(ForeignKey("dim_kafedra.kafedra_key"))
+    group_key: Mapped[int | None] = mapped_column(ForeignKey("dim_group.group_key"))
     assessment_type_key: Mapped[int] = mapped_column(
         ForeignKey("dim_assessment_type.assessment_type_key"), nullable=False
     )

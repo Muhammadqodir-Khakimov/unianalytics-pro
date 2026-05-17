@@ -37,9 +37,17 @@ etl:
 test:
 	docker-compose exec backend pytest
 
-migrate:
-	docker-compose exec backend alembic -x target=oltp upgrade head
-	docker-compose exec backend alembic -x target=olap upgrade head
+migrate: migrate-oltp migrate-olap
+
+migrate-oltp:
+	docker-compose exec backend alembic -x target=oltp upgrade oltp@head
+
+migrate-olap:
+	docker-compose exec backend alembic -x target=olap upgrade olap@head
+
+migrate-status:
+	docker-compose exec backend alembic -x target=oltp current
+	docker-compose exec backend alembic -x target=olap current
 
 prod:
 	docker-compose -f docker-compose.prod.yml up -d

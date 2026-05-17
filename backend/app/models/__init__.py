@@ -25,12 +25,15 @@ from app.models.oltp.hemis import (
 )
 from app.models.oltp.tenant import Permission, RolePermission, Tenant, Webhook
 from app.models.oltp.billing import Invoice, Subscription
+from app.models.oltp.parent_link import ParentLink, ParentLinkStatus, UserPreferences
 
 from app.models.olap.dim_student import DimStudent
 from app.models.olap.dim_subject import DimSubject
 from app.models.olap.dim_teacher import DimTeacher
 from app.models.olap.dim_time import DimTime
 from app.models.olap.dim_faculty import DimFaculty
+from app.models.olap.dim_kafedra import DimKafedra
+from app.models.olap.dim_group import DimGroup
 from app.models.olap.dim_assessment import DimAssessmentType
 from app.models.olap.fact_grades import FactStudentGrade
 
@@ -46,12 +49,17 @@ __all__ = [
     "Subject",
     "Grade",
     "AssessmentType",
+    "ParentLink",
+    "ParentLinkStatus",
+    "UserPreferences",
     # OLAP
     "DimStudent",
     "DimSubject",
     "DimTeacher",
     "DimTime",
     "DimFaculty",
+    "DimKafedra",
+    "DimGroup",
     "DimAssessmentType",
     "FactStudentGrade",
 ]

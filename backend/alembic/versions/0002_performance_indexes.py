@@ -21,30 +21,49 @@ branch_labels = None
 depends_on = None
 
 
+TABLE = "fact_student_grades"
+COMPOSITE = [
+    ("ix_fact_time_student",  ["time_key", "student_key"]),
+    ("ix_fact_faculty_time2", ["faculty_key", "time_key"]),
+    ("ix_fact_subject_time",  ["subject_key", "time_key"]),
+    ("ix_fact_teacher_time",  ["teacher_key", "time_key"]),
+]
+SINGLE_COLS = ("student_key", "subject_key", "teacher_key", "faculty_key", "time_key")
+
+
 def upgrade() -> None:
-    # === fact_grades composite indexes ===
-    op.create_index("ix_fact_grades_time_student", "fact_grades", ["time_key", "student_key"])
-    op.create_index("ix_fact_grades_faculty_time", "fact_grades", ["faculty_key", "time_key"])
-    op.create_index("ix_fact_grades_subject_time", "fact_grades", ["subject_key", "time_key"])
-    op.create_index("ix_fact_grades_teacher_time", "fact_grades", ["teacher_key", "time_key"])
+    bind = op.get_bind()
+    existing = {idx["name"] for idx in sa.inspect(bind).get_indexes(TABLE)}
 
-    # === dim_student composite filter ===
-    op.create_index("ix_dim_student_faculty_status", "dim_student", ["faculty_key", "status"])
+    for name, cols in COMPOSITE:
+        if name not in existing:
+            op.create_index(name, TABLE, cols)
 
-    # === dim_time rollup ===
-    op.create_index("ix_dim_time_year_semester", "dim_time", ["year", "semester"])
+    # dim_time rollup (year + semester)
+    if "ix_dim_time_year_semester" not in {
+        idx["name"] for idx in sa.inspect(bind).get_indexes("dim_time")
+    }:
+        op.create_index("ix_dim_time_year_semester", "dim_time", ["year", "semester"])
 
-    # === Single-column indexes for foreign keys (often missing in star schema) ===
-    for col in ("student_key", "subject_key", "teacher_key", "faculty_key", "time_key"):
-        op.create_index(f"ix_fact_grades_{col}", "fact_grades", [col])
+    # Yagona ustun indekslari (FK)
+    for col in SINGLE_COLS:
+        name = f"ix_fact_{col}_perf"
+        if name not in existing:
+            op.create_index(name, TABLE, [col])
 
 
 def downgrade() -> None:
-    op.drop_index("ix_fact_grades_time_student", table_name="fact_grades")
-    op.drop_index("ix_fact_grades_faculty_time", table_name="fact_grades")
-    op.drop_index("ix_fact_grades_subject_time", table_name="fact_grades")
-    op.drop_index("ix_fact_grades_teacher_time", table_name="fact_grades")
-    op.drop_index("ix_dim_student_faculty_status", table_name="dim_student")
-    op.drop_index("ix_dim_time_year_semester", table_name="dim_time")
-    for col in ("student_key", "subject_key", "teacher_key", "faculty_key", "time_key"):
-        op.drop_index(f"ix_fact_grades_{col}", table_name="fact_grades")
+    bind = op.get_bind()
+    existing = {idx["name"] for idx in sa.inspect(bind).get_indexes(TABLE)}
+
+    for col in SINGLE_COLS:
+        name = f"ix_fact_{col}_perf"
+        if name in existing:
+            op.drop_index(name, table_name=TABLE)
+    for name, _ in COMPOSITE:
+        if name in existing:
+            op.drop_index(name, table_name=TABLE)
+    if "ix_dim_time_year_semester" in {
+        idx["name"] for idx in sa.inspect(bind).get_indexes("dim_time")
+    }:
+        op.drop_index("ix_dim_time_year_semester", table_name="dim_time")

@@ -14,7 +14,7 @@ from alembic import op
 
 revision: str = "0001_oltp_init"
 down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
+branch_labels: Union[str, Sequence[str], None] = ("oltp",)
 depends_on: Union[str, Sequence[str], None] = None
 
 

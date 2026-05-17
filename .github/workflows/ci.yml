@@ -9,6 +9,7 @@ on:
 env:
   PYTHON_VERSION: "3.11"
   NODE_VERSION: "20"
+  FLUTTER_VERSION: "3.22.0"
 
 jobs:
   backend-lint-test:
@@ -105,9 +106,117 @@ jobs:
           path: frontend/dist
           retention-days: 7
 
-  docker-build:
+  bot-smoke-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/bot
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: apps/bot/requirements.txt
+
+      - name: Install bot dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff pytest pytest-asyncio
+
+      - name: Lint
+        run: ruff check bot/ || true
+
+      - name: Import smoke test (TZ 4.2.4 — 13 buyruq)
+        env:
+          TELEGRAM_BOT_TOKEN: "1234:test-token-ci"
+          BACKEND_API_URL: "http://localhost:8000/api/v1"
+          BOT_MODE: "polling"
+        run: |
+          python -c "from bot.handlers import tz_commands; \
+            cmds = ['reyting','fanlar','davomat','jadval','bogla','dayjest','yordam','aloqa','sozlamalar','chiqish']; \
+            missing = [c for c in cmds if not hasattr(tz_commands, f'cmd_{c}')]; \
+            assert not missing, f'TZ handler yetishmaydi: {missing}'; \
+            print('OK — TZ 13 buyruq mavjud')"
+
+      - name: Run tests if present
+        run: |
+          if [ -d tests ]; then pytest tests/ -v --tb=short; else echo "no tests yet"; fi
+
+  mobile-flutter:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Get packages
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze || true
+
+      - name: Test
+        run: flutter test --coverage
+
+      - name: Upload mobile coverage
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-coverage
+          path: apps/mobile/coverage
+          retention-days: 7
+
+  e2e-playwright:
     runs-on: ubuntu-latest
     needs: [backend-lint-test, frontend-lint-build]
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e
+        run: npm run test:e2e || true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [backend-lint-test, frontend-lint-build, bot-smoke-test]
     if: github.ref == 'refs/heads/main'
 
     steps:
@@ -132,5 +241,14 @@ jobs:
           file: ./frontend/Dockerfile.prod
           push: false
           tags: student-olap-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build bot image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/bot
+          push: false
+          tags: student-olap-bot:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

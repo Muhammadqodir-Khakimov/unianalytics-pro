@@ -1,0 +1,545 @@
+openapi: 3.0.3
+info:
+  title: ReytingOLAP API
+  version: 1.0.0
+  description: |
+    Talabalar reytingini OLAP tahlili asosida monitoring qilish AT.
+    SRAP-2026 — REST API spetsifikatsiyasi (TZ 4.2.1, 8.1).
+  contact:
+    name: Loyiha rahbari
+servers:
+  - url: https://api.reytingolap.uz/api/v1
+    description: Production
+  - url: http://localhost:8000/api/v1
+    description: Local
+
+security:
+  - bearerAuth: []
+
+tags:
+  - { name: auth,    description: Autentifikatsiya va sessiya }
+  - { name: users,   description: Foydalanuvchilar va rollar }
+  - { name: olap,    description: OLAP kub so'rovlari }
+  - { name: talaba,  description: Talabaga oid ko'rinishlar }
+  - { name: hisobot, description: Hisobot generatsiyasi }
+  - { name: prognoz, description: ML prognoz va risk tahlili }
+  - { name: etl,     description: HEMIS integratsiyasi va ETL }
+  - { name: bot,     description: Telegram bot webhook va bog'lash }
+
+paths:
+  # ---------- AUTH ----------
+  /auth/login:
+    post:
+      tags: [auth]
+      security: []
+      summary: HEMIS akkaunti yoki mahalliy login orqali kirish
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: JWT juftligi
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      security: []
+      summary: Refresh token bilan yangi access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+
+  /auth/2fa/verify:
+    post:
+      tags: [auth]
+      summary: Ikki bosqichli autentifikatsiya kodini tekshirish
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [otp]
+              properties: { otp: { type: string, minLength: 6, maxLength: 6 } }
+      responses: { '200': { description: OK } }
+
+  /auth/logout:
+    post: { tags: [auth], summary: Sessiyani yopish, responses: { '204': { description: No Content } } }
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Joriy foydalanuvchi profili
+      responses:
+        '200':
+          content: { application/json: { schema: { $ref: '#/components/schemas/User' } } }
+
+  # ---------- USERS / RBAC ----------
+  /users:
+    get:
+      tags: [users]
+      summary: Foydalanuvchilar ro'yxati
+      parameters:
+        - { name: role, in: query, schema: { $ref: '#/components/schemas/Role' } }
+        - { name: q,    in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserList' }
+    post:
+      tags: [users]
+      summary: Yangi foydalanuvchi yaratish
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/UserCreate' } } }
+      responses:
+        '201': { content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } }
+
+  /users/{user_id}:
+    parameters:
+      - { name: user_id, in: path, required: true, schema: { type: integer } }
+    get:    { tags: [users], summary: Bitta foydalanuvchi, responses: { '200': { content: { application/json: { schema: { $ref: '#/components/schemas/User' } } } } } }
+    patch:  { tags: [users], summary: Foydalanuvchini tahrirlash, responses: { '200': { description: OK } } }
+    delete: { tags: [users], summary: Foydalanuvchini o'chirish, responses: { '204': { description: No Content } } }
+
+  # ---------- OLAP ----------
+  /olap/cube/query:
+    post:
+      tags: [olap]
+      summary: Ko'p o'lchovli kub so'rovi (drill-down / slice / dice / pivot)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CubeQuery' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CubeResult' }
+
+  /olap/cube/drillthrough:
+    post:
+      tags: [olap]
+      summary: Agregatdan birlamchi yozuvlarga o'tish
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/DrillThroughRequest' } } }
+      responses:
+        '200': { content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/FactRow' } } } } }
+
+  /olap/dimensions:
+    get:
+      tags: [olap]
+      summary: Mavjud o'lchamlar va ularning a'zolari
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Dimension' }
+
+  /olap/kpi/dashboard:
+    get:
+      tags: [olap]
+      summary: Bosh sahifa KPI kartochkalari
+      parameters:
+        - { name: semestr_id, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          content: { application/json: { schema: { $ref: '#/components/schemas/DashboardKPI' } } }
+
+  # ---------- TALABA ----------
+  /talaba/{talaba_id}/reyting:
+    parameters:
+      - { name: talaba_id, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [talaba]
+      summary: Talaba GPA, reyting va fanlar bo'yicha natijalari
+      responses:
+        '200':
+          content: { application/json: { schema: { $ref: '#/components/schemas/TalabaReyting' } } }
+
+  /talaba/{talaba_id}/dinamika:
+    parameters:
+      - { name: talaba_id, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [talaba]
+      summary: Semestrlar bo'yicha o'sish chizig'i
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    semestr: { type: string }
+                    gpa:     { type: number, format: float }
+
+  # ---------- HISOBOT ----------
+  /hisobot/generate:
+    post:
+      tags: [hisobot]
+      summary: Hisobot tayyorlash (sinxron yoki rejalashtirilgan)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReportRequest' }
+      responses:
+        '202':
+          description: Topshiriq qabul qilindi, fayl tayyor bo'lganda webhook/email orqali yetkaziladi
+          content: { application/json: { schema: { type: object, properties: { job_id: { type: string } } } } }
+
+  /hisobot/{job_id}:
+    parameters:
+      - { name: job_id, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [hisobot]
+      summary: Hisobot holati va yuklab olish havolasi
+      responses:
+        '200':
+          content: { application/json: { schema: { $ref: '#/components/schemas/ReportJob' } } }
+
+  # ---------- PROGNOZ / ML ----------
+  /prognoz/talaba/{talaba_id}:
+    parameters:
+      - { name: talaba_id, in: path, required: true, schema: { type: integer } }
+    get:
+      tags: [prognoz]
+      summary: Talabaning kelajakdagi GPA prognozi (TZ KPI ≥ 85% aniqlik)
+      responses:
+        '200':
+          content: { application/json: { schema: { $ref: '#/components/schemas/Prediction' } } }
+
+  /prognoz/risk-guruh:
+    get:
+      tags: [prognoz]
+      summary: Akademik xavfdagi talabalar ro'yxati
+      parameters:
+        - { name: fakultet_id, in: query, schema: { type: integer } }
+        - { name: porog,       in: query, schema: { type: number, default: 0.5 }, description: Risk ehtimoli chegarasi }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RiskRow' }
+
+  # ---------- ETL / HEMIS ----------
+  /etl/hemis/sync:
+    post:
+      tags: [etl]
+      summary: HEMISdan qo'lda sinxronizatsiya boshlash (admin)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tur: { type: string, enum: [talaba, baho, oqituvchi, fan, hammasi] }
+      responses:
+        '202': { description: ETL ishi navbatga qo'yildi }
+
+  /etl/jobs:
+    get:
+      tags: [etl]
+      summary: ETL ishlari tarixi (audit log)
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EtlJob' }
+
+  # ---------- TELEGRAM BOT ----------
+  /bot/webhook:
+    post:
+      tags: [bot]
+      security: []
+      summary: Telegram update-larni qabul qilish
+      requestBody: { content: { application/json: { schema: { type: object } } } }
+      responses: { '200': { description: OK } }
+
+  /bot/link-parent:
+    post:
+      tags: [bot]
+      summary: Ota-onaning talabaga bog'lanish so'rovi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [telegram_id, talaba_hemis_id]
+              properties:
+                telegram_id:      { type: integer, format: int64 }
+                talaba_hemis_id:  { type: string }
+      responses:
+        '202': { description: Tasdiqlash so'rovi talabaga yuborildi }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    Size: { name: size, in: query, schema: { type: integer, minimum: 1, maximum: 200, default: 25 } }
+
+  responses:
+    Unauthorized:
+      description: Token yo'q yoki yaroqsiz
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    RateLimited:
+      description: 100 so'rov/daqiqa chegarasi oshib ketgan
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        details: { type: object, additionalProperties: true }
+
+    Role:
+      type: string
+      enum: [super_admin, rektor, prorektor, dekan, kafedra_mudiri, oqituvchi, talaba, ota_ona]
+
+    LoginRequest:
+      type: object
+      required: [login, parol]
+      properties:
+        login:   { type: string, description: HEMIS ID, email yoki telefon }
+        parol:   { type: string, format: password }
+        manba:   { type: string, enum: [hemis, mahalliy], default: hemis }
+
+    TokenPair:
+      type: object
+      properties:
+        access_token:  { type: string }
+        refresh_token: { type: string }
+        token_type:    { type: string, default: bearer }
+        expires_in:    { type: integer, description: sekundlarda (900 = 15 min) }
+        requires_2fa:  { type: boolean, default: false }
+
+    User:
+      type: object
+      properties:
+        user_id:   { type: integer }
+        fish:      { type: string }
+        email:     { type: string, format: email }
+        role:      { $ref: '#/components/schemas/Role' }
+        fakultet_id: { type: integer, nullable: true }
+        kafedra_id:  { type: integer, nullable: true }
+        faol:      { type: boolean }
+        oxirgi_kirish: { type: string, format: date-time }
+
+    UserCreate:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          required: [parol, role]
+          properties:
+            parol: { type: string, minLength: 8 }
+
+    UserList:
+      type: object
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/User' } }
+        total: { type: integer }
+        page:  { type: integer }
+        size:  { type: integer }
+
+    Dimension:
+      type: object
+      properties:
+        nomi:    { type: string, example: fakultet }
+        kalit:   { type: string, example: fakultet_id }
+        atributlar:
+          type: array
+          items: { type: string }
+        a_zolar:
+          type: array
+          items:
+            type: object
+            properties:
+              id:    { type: integer }
+              nomi:  { type: string }
+
+    CubeQuery:
+      type: object
+      required: [measures, dimensions]
+      properties:
+        measures:
+          type: array
+          items: { type: string, enum: [ortacha_ball, gpa, qarzdor_soni, davomat, vaznlangan_ball, talabalar_soni] }
+        dimensions:
+          type: array
+          description: "Satrlar uchun (rows)"
+          items: { type: string, enum: [fakultet, kafedra, guruh, talaba, fan, oqituvchi, semestr] }
+        columns:
+          type: array
+          items: { type: string }
+        filters:
+          type: object
+          additionalProperties: true
+          example: { semestr_id: 5, fakultet_id: [1,2] }
+        operation:
+          type: string
+          enum: [drill_down, roll_up, slice, dice, pivot]
+
+    CubeResult:
+      type: object
+      properties:
+        headers: { type: array, items: { type: string } }
+        rows:
+          type: array
+          items: { type: array, items: { } }
+        meta:
+          type: object
+          properties:
+            execution_ms: { type: integer }
+            cached:       { type: boolean }
+            row_count:    { type: integer }
+
+    DrillThroughRequest:
+      type: object
+      properties:
+        filters: { type: object, additionalProperties: true }
+        limit:   { type: integer, default: 100 }
+
+    FactRow:
+      type: object
+      properties:
+        fact_id:           { type: integer, format: int64 }
+        talaba_id:         { type: integer }
+        fan_id:            { type: integer }
+        semestr_id:        { type: integer }
+        jn_ball:           { type: number }
+        on_ball:           { type: number }
+        yan_ball:          { type: number }
+        umumiy_ball:       { type: number }
+        davomat_foiz:      { type: number }
+        topshirilgan_sana: { type: string, format: date }
+
+    DashboardKPI:
+      type: object
+      properties:
+        ortacha_gpa:        { type: number, format: float }
+        talabalar_soni:     { type: integer }
+        faol_oqituvchilar:  { type: integer }
+        risk_guruh_soni:    { type: integer }
+        qarzdor_talabalar:  { type: integer }
+        fakultet_top:
+          type: array
+          items:
+            type: object
+            properties:
+              nomi: { type: string }
+              ball: { type: number }
+
+    TalabaReyting:
+      type: object
+      properties:
+        talaba_id:        { type: integer }
+        gpa_100:          { type: number }
+        gpa_5:            { type: number }
+        guruhda_orin:     { type: string, example: "3/25" }
+        fanlar:
+          type: array
+          items:
+            type: object
+            properties:
+              fan_nomi:    { type: string }
+              jn_ball:     { type: number }
+              on_ball:     { type: number }
+              yan_ball:    { type: number }
+              umumiy_ball: { type: number }
+              baho_harfi:  { type: string }
+
+    ReportRequest:
+      type: object
+      required: [shablon, format]
+      properties:
+        shablon: { type: string, enum: [semestr, yillik, fakultet, talaba_kabineti, ozim_qurish] }
+        format:  { type: string, enum: [pdf, xlsx, docx, csv] }
+        filters: { type: object, additionalProperties: true }
+        emailga: { type: string, format: email, nullable: true }
+        rejalashtirilgan: { type: string, format: date-time, nullable: true }
+
+    ReportJob:
+      type: object
+      properties:
+        job_id:    { type: string }
+        status:    { type: string, enum: [pending, running, done, failed] }
+        progress:  { type: integer, minimum: 0, maximum: 100 }
+        file_url:  { type: string, format: uri, nullable: true }
+        xato:      { type: string, nullable: true }
+
+    Prediction:
+      type: object
+      properties:
+        talaba_id:           { type: integer }
+        prognoz_gpa:         { type: number, format: float }
+        risk_ehtimoli:       { type: number, format: float, minimum: 0, maximum: 1 }
+        risk_darajasi:       { type: string, enum: [past, ortacha, yuqori, kritik] }
+        omillar:
+          type: array
+          description: "SHAP qiymatlari bo'yicha eng ta'sirli omillar"
+          items:
+            type: object
+            properties:
+              nomi:    { type: string }
+              vazn:    { type: number }
+        model_version: { type: string }
+        aniqlik:       { type: number, description: "Cross-validation accuracy" }
+
+    RiskRow:
+      type: object
+      properties:
+        talaba_id:     { type: integer }
+        fish:          { type: string }
+        guruh:         { type: string }
+        risk_ehtimoli: { type: number }
+        sabab:         { type: string }
+
+    EtlJob:
+      type: object
+      properties:
+        audit_id:   { type: integer, format: int64 }
+        ish_nomi:   { type: string }
+        boshlangan: { type: string, format: date-time }
+        tugagan:    { type: string, format: date-time, nullable: true }
+        status:     { type: string, enum: [running, success, failed] }
+        qatorlar:   { type: integer }
+        xatolar:    { type: integer }
