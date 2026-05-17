@@ -156,6 +156,7 @@ async def grades_paginate(callback: CallbackQuery, token: str | None) -> None:
 # /rank — guruh ichida
 # ----------------------------------------------------------------------
 @router.message(Command("rank"))
+@router.message(F.text == "🏆 Guruh")
 async def cmd_rank(message: Message, token: str | None) -> None:
     if not await _ensure_auth(message, token):
         return
@@ -194,6 +195,7 @@ async def cmd_rank(message: Message, token: str | None) -> None:
 # /rank_faculty — fakultet bo'yicha (taxminiy, dashboard'da hozir bor)
 # ----------------------------------------------------------------------
 @router.message(Command("rank_faculty"))
+@router.message(F.text == "🎓 Fakultet")
 async def cmd_rank_faculty(message: Message, token: str | None) -> None:
     if not await _ensure_auth(message, token):
         return

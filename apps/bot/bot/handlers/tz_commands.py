@@ -8,7 +8,7 @@ yengil obyolg'ich rolini bajaradi — biznes-logika dublikatsiya qilinmaydi.
 """
 from __future__ import annotations
 
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
@@ -47,6 +47,7 @@ async def cmd_fanlar(message: Message, token: str | None) -> None:
 # /davomat — darslarga qatnashish foizi (TZ 4.2.4)
 # ---------------------------------------------------------------------------
 @router.message(Command("davomat"))
+@router.message(F.text == "📅 Davomat")
 async def cmd_davomat(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("🔒 Avval tizimga kiring: /login")
@@ -93,6 +94,7 @@ async def cmd_davomat(message: Message, token: str | None) -> None:
 # /top — guruh ichida TOP klassmati (yangi)
 # ---------------------------------------------------------------------------
 @router.message(Command("top"))
+@router.message(F.text == "📈 TOP")
 async def cmd_top(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("🔒 Avval tizimga kiring: /login")
@@ -124,6 +126,7 @@ async def cmd_top(message: Message, token: str | None) -> None:
 # /trend — GPA dinamikasi semestrlar bo'yicha (ASCII chart)
 # ---------------------------------------------------------------------------
 @router.message(Command("trend"))
+@router.message(F.text == "📈 Trend")
 async def cmd_trend(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("🔒 Avval tizimga kiring: /login")
@@ -170,6 +173,7 @@ async def cmd_trend(message: Message, token: str | None) -> None:
 # /maqsad — semestr maqsadi (motivatsion)
 # ---------------------------------------------------------------------------
 @router.message(Command("maqsad"))
+@router.message(F.text == "🎯 Maqsad")
 async def cmd_maqsad(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("🔒 Avval tizimga kiring: /login")
@@ -237,6 +241,7 @@ async def cmd_maqsad(message: Message, token: str | None) -> None:
 # /xavf — risk talabalar (teacher/dean/admin uchun)
 # ---------------------------------------------------------------------------
 @router.message(Command("xavf"))
+@router.message(F.text == "⚠️ Risk")
 async def cmd_xavf(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("🔒 Avval tizimga kiring: /login")
@@ -272,6 +277,7 @@ async def cmd_xavf(message: Message, token: str | None) -> None:
 # /top_fakultet — eng yaxshi fakultetlar (admin uchun)
 # ---------------------------------------------------------------------------
 @router.message(Command("top_fakultet"))
+@router.message(F.text == "🏛 Fakultetlar")
 async def cmd_top_fakultet(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("🔒 Avval tizimga kiring: /login")
@@ -304,6 +310,7 @@ async def cmd_top_fakultet(message: Message, token: str | None) -> None:
 # /imtihon — yaqinlashayotgan imtihonlar (yangi)
 # ---------------------------------------------------------------------------
 @router.message(Command("imtihon"))
+@router.message(F.text == "📚 Imtihonlar")
 async def cmd_imtihon(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("🔒 Avval tizimga kiring: /login")
@@ -417,6 +424,7 @@ async def cmd_yordam(message: Message) -> None:
 # /aloqa — dekanat / kurator bilan bog'lanish (TZ 4.2.4)
 # ---------------------------------------------------------------------------
 @router.message(Command("aloqa"))
+@router.message(F.text == "📞 Aloqa")
 async def cmd_aloqa(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("🔒 Avval tizimga kiring: /login")
@@ -470,6 +478,7 @@ async def cmd_aloqa(message: Message, token: str | None) -> None:
 # /sozlamalar — til + xabarnoma sozlamalari (TZ 4.2.4)
 # ---------------------------------------------------------------------------
 @router.message(Command("sozlamalar"))
+@router.message(F.text == "⚙️ Sozlamalar")
 async def cmd_sozlamalar(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("🔒 Avval tizimga kiring: /login")

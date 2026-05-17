@@ -1,7 +1,7 @@
 """/start, /menu, /help, fallback handlerlari."""
 from __future__ import annotations
 
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.types import Message
 
@@ -81,11 +81,13 @@ async def cmd_start(
 
 
 @router.message(Command("help"))
+@router.message(F.text == "❓ Yordam")
 async def cmd_help(message: Message) -> None:
     await message.answer(HELP, parse_mode="Markdown")
 
 
 @router.message(Command("menu"))
+@router.message(F.text == "📋 Menyu")
 async def cmd_menu(message: Message, token: str | None) -> None:
     if not token:
         await message.answer("Avval tizimga kiring: /login")

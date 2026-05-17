@@ -12,6 +12,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import BotCommand, BotCommandScopeDefault
 from loguru import logger
 from redis.asyncio import Redis
 
@@ -21,6 +22,34 @@ from .middlewares.auth import AuthMiddleware
 from .middlewares.throttling import ThrottlingMiddleware
 from .services.api_client import api_client
 from .services.auth_store import auth_store
+
+
+async def _register_commands(bot: Bot) -> None:
+    """Telegram'da `/` bosilganda chiqadigan buyruqlar ro'yxati."""
+    commands = [
+        BotCommand(command="menu",         description="📋 Asosiy menyu"),
+        BotCommand(command="reyting",      description="📊 GPA va o'rin"),
+        BotCommand(command="rank_faculty", description="🎓 Fakultet ichida o'rin"),
+        BotCommand(command="top",          description="📈 Guruhda TOP-10"),
+        BotCommand(command="fanlar",       description="📝 Fanlar bo'yicha baholar"),
+        BotCommand(command="davomat",      description="📅 Davomat foizi"),
+        BotCommand(command="trend",        description="📈 GPA dinamikasi"),
+        BotCommand(command="maqsad",       description="🎯 GPA maqsadlari"),
+        BotCommand(command="jadval",       description="🗓 Dars jadvali"),
+        BotCommand(command="imtihon",      description="📚 Yaqin imtihonlar"),
+        BotCommand(command="xavf",         description="⚠️ Akademik xavf"),
+        BotCommand(command="top_fakultet", description="🏛 TOP fakultetlar"),
+        BotCommand(command="notifications",description="🔔 Xabarlar"),
+        BotCommand(command="profile",      description="👤 Profil"),
+        BotCommand(command="aloqa",        description="📞 Kurator/dekan"),
+        BotCommand(command="bogla",        description="👨‍👩‍👧 Ota-ona bog'lash"),
+        BotCommand(command="dayjest",      description="📨 Haftalik dayjest"),
+        BotCommand(command="sozlamalar",   description="⚙️ Sozlamalar"),
+        BotCommand(command="login",        description="🔐 Tizimga kirish"),
+        BotCommand(command="chiqish",      description="🚪 Akkauntdan chiqish"),
+        BotCommand(command="yordam",       description="❓ Yordam"),
+    ]
+    await bot.set_my_commands(commands, scope=BotCommandScopeDefault())
 
 
 def _setup_logging() -> None:
@@ -79,7 +108,9 @@ async def run_polling() -> None:
 
     try:
         me = await bot.get_me()
-        logger.info("Bot @{} ishga tushdi (polling)", me.username)
+        await _register_commands(bot)
+        logger.info("Bot @{} ishga tushdi (polling, {} buyruq ro'yxatga olindi)",
+                    me.username, 21)
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
     finally:
         await bot.session.close()
@@ -112,6 +143,7 @@ async def run_webhook() -> None:
         secret_token=settings.webhook_secret,
         allowed_updates=dp.resolve_used_update_types(),
     )
+    await _register_commands(bot)
 
     app = web.Application()
     SimpleRequestHandler(
