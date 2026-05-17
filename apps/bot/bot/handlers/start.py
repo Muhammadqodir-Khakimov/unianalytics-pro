@@ -31,37 +31,38 @@ def welcome_authed(name: str) -> str:
     )
 
 
+# HTML formatda — Markdown'dan ishonchliroq (`[text]`, `*`, `_` xatosiz).
 HELP = (
-    "*📚 Bot buyruqlari:*\n\n"
-    "🔐 *Auth:*\n"
+    "<b>📚 Bot buyruqlari:</b>\n\n"
+    "<b>🔐 Auth</b>\n"
     "/login — tizimga kirish\n"
     "/chiqish (yoki /logout) — chiqish\n\n"
-    "📊 *Akademik holat:*\n"
-    "/reyting — GPA, o'rtacha ball, guruh ichidagi o'rin\n"
+    "<b>📊 Akademik holat</b>\n"
+    "/reyting — GPA va guruh ichidagi o'rin\n"
     "/rank_faculty — fakultet ichidagi o'rningiz\n"
     "/top — guruhda TOP-10 talabalar\n"
     "/trend — GPA dinamikasi (semestrlar)\n"
     "/maqsad — GPA bo'yicha maqsadlar\n"
-    "/fanlar — fanlar bo'yicha baholar (sahifalanadi)\n"
+    "/fanlar — baholar (sahifalanadi)\n"
     "/davomat — fan kesimida davomat foizi\n"
     "/imtihon — yaqinlashayotgan imtihonlar\n"
     "/jadval — dars jadvali\n"
     "/profile — shaxsiy ma'lumot\n\n"
-    "🎓 *O'qituvchi / dekan / admin uchun:*\n"
+    "<b>🎓 O'qituvchi / dekan / admin uchun</b>\n"
     "/xavf — akademik xavfdagi talabalar\n"
-    "/top_fakultet — eng yaxshi fakultetlar (admin)\n\n"
-    "👨‍👩‍👧 *Ota-ona / aloqa:*\n"
-    "/bogla [HEMIS_ID] — farzandga bog'lanish so'rovi\n"
-    "/aloqa — kurator/dekan kontaktlari\n\n"
-    "⚙️ *Sozlamalar va xabarlar:*\n"
-    "/sozlamalar — til + bildirishnomalar (interaktiv)\n"
+    "/top_fakultet — eng yaxshi fakultetlar\n\n"
+    "<b>👨‍👩‍👧 Ota-ona / aloqa</b>\n"
+    "/bogla 11220194 — farzandga bog'lanish (HEMIS ID bilan)\n"
+    "/aloqa — kurator / dekan kontaktlari\n\n"
+    "<b>⚙️ Sozlamalar va xabarlar</b>\n"
+    "/sozlamalar — interaktiv panel\n"
     "/notify_settings — push sozlamalari\n"
-    "/dayjest yoq|ochir — haftalik dayjest\n"
-    "/notifications — bildirishnomalar ro'yxati\n\n"
-    "❓ *Boshqa:*\n"
+    "/dayjest yoq — haftalik dayjest yoqish\n"
+    "/notifications — bildirishnomalar\n\n"
+    "<b>❓ Boshqa</b>\n"
     "/start — botni qayta ishga tushirish\n"
     "/menu — interaktiv menyu\n"
-    "/yordam (yoki /help) — ushbu qo'llanma"
+    "/yordam — ushbu qo'llanma"
 )
 
 
@@ -83,7 +84,8 @@ async def cmd_start(
 @router.message(Command("help"))
 @router.message(F.text == "❓ Yordam")
 async def cmd_help(message: Message) -> None:
-    await message.answer(HELP, parse_mode="Markdown")
+    # HELP endi HTML formatda — bot default parse_mode (HTML) bilan mos.
+    await message.answer(HELP, parse_mode="HTML")
 
 
 @router.message(Command("menu"))

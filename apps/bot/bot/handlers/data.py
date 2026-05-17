@@ -233,7 +233,7 @@ async def cmd_rank_faculty(message: Message, token: str | None) -> None:
 # /schedule
 # ----------------------------------------------------------------------
 @router.message(Command("schedule"))
-@router.message(F.text == "📅 Jadval")
+@router.message(F.text.in_({"📅 Jadval", "🗓 Jadval"}))
 async def cmd_schedule(message: Message, token: str | None) -> None:
     if not await _ensure_auth(message, token):
         return
@@ -408,4 +408,4 @@ async def cmd_profile(message: Message, token: str | None, user: dict | None) ->
 @router.message(F.text == "❓ Yordam")
 async def menu_help(message: Message) -> None:
     from .start import HELP
-    await message.answer(HELP, parse_mode="Markdown")
+    await message.answer(HELP, parse_mode="HTML")
