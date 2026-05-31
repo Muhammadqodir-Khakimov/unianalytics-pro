@@ -34,8 +34,6 @@ services:
           type: redis
           name: student-olap-redis
           property: port
-      - key: APP_ENV
-        value: production
       - key: AUTO_INIT_DB
         value: "true"
       - key: CELERY_BROKER_URL
@@ -45,32 +43,11 @@ services:
           property: connectionString
     autoDeploy: true
 
-  - type: worker
-    name: student-olap-bot
-    runtime: docker
-    rootDir: apps/bot
-    dockerfilePath: ./Dockerfile
-    plan: free
-    envVars:
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: BACKEND_API_URL
-        value: https://student-olap-backend.onrender.com/api/v1
-      - key: BOT_MODE
-        value: polling
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: student-olap-redis
-          property: connectionString
-      - key: RATE_LIMIT_PER_MIN
-        value: "20"
-    autoDeploy: true
-
   - type: redis
     name: student-olap-redis
     plan: free
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
 
 databases:
   - name: student-olap-oltp
