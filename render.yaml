@@ -24,30 +24,17 @@ services:
         fromDatabase:
           name: student-olap-olap
           property: connectionString
+      - key: REDIS_URL
+        sync: false
       - key: REDIS_HOST
-        fromService:
-          type: redis
-          name: student-olap-redis
-          property: host
+        sync: false
       - key: REDIS_PORT
-        fromService:
-          type: redis
-          name: student-olap-redis
-          property: port
+        sync: false
       - key: AUTO_INIT_DB
         value: "true"
       - key: CELERY_BROKER_URL
-        fromService:
-          type: redis
-          name: student-olap-redis
-          property: connectionString
+        sync: false
     autoDeploy: true
-
-  - type: redis
-    name: student-olap-redis
-    plan: free
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
 
 databases:
   - name: student-olap-oltp
