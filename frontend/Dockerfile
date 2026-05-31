@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Build-time args — Railway passes these from env vars automatically
-ARG VITE_API_BASE_URL
+ARG VITE_API_BASE_URL=https://backend-production-9e26.up.railway.app/api/v1
 ARG VITE_APP_NAME=RateUP
 ARG VITE_DEFAULT_LANG=uz
 
