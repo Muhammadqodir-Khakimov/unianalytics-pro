@@ -7,7 +7,7 @@ services:
     runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: APP_ENV
@@ -29,17 +29,20 @@ services:
           type: redis
           name: student-olap-redis
           property: host
-    autoDeploy: true
-
-  - type: web
-    name: student-olap-frontend
-    runtime: docker
-    rootDir: frontend
-    dockerfilePath: ./Dockerfile.prod
-    plan: starter
-    envVars:
-      - key: VITE_API_BASE_URL
-        value: https://student-olap-backend.onrender.com/api/v1
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: student-olap-redis
+          property: port
+      - key: APP_ENV
+        value: production
+      - key: AUTO_INIT_DB
+        value: "true"
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: student-olap-redis
+          property: connectionString
     autoDeploy: true
 
   - type: worker
@@ -47,10 +50,10 @@ services:
     runtime: docker
     rootDir: apps/bot
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free
     envVars:
       - key: TELEGRAM_BOT_TOKEN
-        sync: false                       # @BotFather tokeni — qo'lda kiritiladi
+        sync: false
       - key: BACKEND_API_URL
         value: https://student-olap-backend.onrender.com/api/v1
       - key: BOT_MODE

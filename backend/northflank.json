@@ -1,0 +1,38 @@
+{
+  "apiVersion": "v1",
+  "spec": {
+    "kind": "DeploymentService",
+    "spec": {
+      "name": "student-rating-backend",
+      "billing": {
+        "deploymentPlan": "nf-compute-20"
+      },
+      "deployment": {
+        "instances": 1,
+        "docker": {
+          "configType": "customCommand",
+          "customCommand": "sh start.sh"
+        },
+        "internal": {
+          "id": "student-rating-backend",
+          "branch": "main",
+          "buildSHA": "latest"
+        }
+      },
+      "container": {
+        "port": 8000,
+        "healthChecks": [
+          {
+            "protocol": "HTTP",
+            "path": "/health",
+            "port": 8000,
+            "initialDelaySeconds": 30,
+            "periodSeconds": 30,
+            "timeoutSeconds": 10,
+            "failureThreshold": 3
+          }
+        ]
+      }
+    }
+  }
+}
