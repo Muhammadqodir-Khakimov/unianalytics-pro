@@ -15,6 +15,11 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+# Write production .env (gitignored, so we write it here during build)
+RUN printf 'VITE_API_BASE_URL=%s\nVITE_APP_NAME=%s\nVITE_DEFAULT_LANG=%s\n' \
+    "$VITE_API_BASE_URL" "$VITE_APP_NAME" "$VITE_DEFAULT_LANG" > .env
+
 RUN npm run build
 
 # Production image — nginx serves static files
